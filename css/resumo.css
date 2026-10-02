@@ -1,0 +1,31 @@
+/* ————— resumo do mês ————— */
+.mes,.set{padding:18px 16px}
+.mes h2,.set h2{font-family:var(--display);font-weight:400;font-size:17px;margin:0 0 12px}
+.metric{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.metric .k{flex:1;font-size:13.5px;min-width:0}
+.metric .k small{display:block;color:var(--text-dim);font-size:11.5px;margin-top:1px}
+.metric .v{
+  text-align:right;font-variant-numeric:tabular-nums;
+  font-family:var(--display);font-size:19px;font-weight:600;
+  white-space:nowrap;
+}
+.metric .v small{display:block;font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;font-weight:400;margin-top:2px}
+.good{color:var(--pos-deep)}.bad{color:var(--neg-deep)}.dim{color:var(--text-dim)}
+.bar{height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:8px;max-width:200px}
+.bar i{display:block;height:100%;background:var(--pos-deep);border-radius:99px;transition:width .5s ease}
+.bar i.bad{background:var(--neg-deep)}
+.mov{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.mov b{font-weight:500;font-variant-numeric:tabular-nums}
+.cat{padding:10px 0 11px;border-bottom:1px solid var(--line-soft)}
+.cat-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13.5px}
+.cat-top b{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cat-top b i{font-style:normal;color:var(--text-dim);font-size:11.5px;margin-left:5px}
+.cat .bar{margin-top:7px;max-width:none}
+.escala{display:flex;gap:5px;margin-top:12px}
+.sheet .escala{margin-top:4px}
+.escala .fx{flex:1;min-width:0;text-align:center}
+.escala .fx i{display:block;height:30px;border-radius:7px;margin-bottom:6px}
+.escala .fx span{display:block;font-size:11.5px;font-weight:500;color:var(--text)}
+.escala .fx small{display:block;font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.escala .fx em{display:block;font-style:normal;font-size:9.5px;color:var(--text-dim);margin-top:2px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px;vertical-align:middle;flex:none}

@@ -1,0 +1,61 @@
+/* ————— constantes da marca ————— */
+:root{
+  --ink:#0D2236;
+  --cream:#F4EFE3;
+  --topbar-h:58px;
+  --display:"Space Grotesk","IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --r:10px;
+}
+/* ————— tema claro ————— */
+:root{
+  --backdrop:#0D2236;
+  --bg:#F4EFE3; --surface:#FBF8F1; --surface-2:#EDE6D6;
+  --line:#DBD1BD; --line-soft:#E7DFCE;
+  --text:#132639; --text-dim:#64778A;
+  --sea:#43769F; --sea-soft:#DFE8EF;
+  --pos-deep:#2F6A4C; --pos-pale:#E2EEE4;
+  --neg-deep:#A63229; --neg-pale:#F5DDD7;
+  --chrome:#0D2236; --chrome-text:#F4EFE3;
+  --btn-bg:#0D2236; --btn-fg:#F4EFE3;
+  --tint-fg:#F7F3EA;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --backdrop:#061320;
+    --bg:#0D2236; --surface:#132C42; --surface-2:#1B364E;
+    --line:#22435F; --line-soft:#1A374E;
+    --text:#F1ECE0; --text-dim:#90A5B8;
+    --sea:#7FADD0; --sea-soft:#1C3D57;
+    --pos-deep:#4FA176; --pos-pale:#163B34;
+    --neg-deep:#D4594A; --neg-pale:#3F2129;
+    --chrome:#071624; --chrome-text:#F1ECE0;
+    --btn-bg:#F1ECE0; --btn-fg:#0D2236;
+    --tint-fg:#0A1A28;
+  }
+}
+:root[data-theme="dark"]{
+  --backdrop:#061320;
+  --bg:#0D2236; --surface:#132C42; --surface-2:#1B364E;
+  --line:#22435F; --line-soft:#1A374E;
+  --text:#F1ECE0; --text-dim:#90A5B8;
+  --sea:#7FADD0; --sea-soft:#1C3D57;
+  --pos-deep:#4FA176; --pos-pale:#163B34;
+  --neg-deep:#D4594A; --neg-pale:#3F2129;
+  --chrome:#071624; --chrome-text:#F1ECE0;
+  --btn-bg:#F1ECE0; --btn-fg:#0D2236;
+  --tint-fg:#0A1A28;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{overflow-x:clip}
+body{
+  background:var(--backdrop);
+  color:var(--text);
+  font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--sea);outline-offset:2px;border-radius:4px}

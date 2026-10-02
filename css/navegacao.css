@@ -1,0 +1,17 @@
+/* ————— abas ————— */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:640px;margin:0 auto;
+  background:var(--chrome);color:var(--chrome-text);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:8px 8px max(8px,env(safe-area-inset-bottom));
+}
+.tabbar button{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:5px 0;font-size:10.5px;color:rgba(244,239,227,.55);
+}
+.tabbar button[aria-current="true"]{color:var(--chrome-text)}
+.tabbar button svg{width:21px;height:21px;flex:none}
+.fab{color:var(--chrome-text);transition:transform .15s ease}
+.fab:hover{transform:scale(1.06)}
+.fab:active{transform:scale(.94)}
+.tabbar .fab svg{stroke-width:2.5}

@@ -1,0 +1,44 @@
+/* ————— celular ————— */
+@media (max-width:559px){
+  .hero{padding:16px 14px 15px}
+  .mes,.set{padding:16px 14px}
+  .note{margin:14px}
+
+  /* a tabela tem 3 colunas aqui; folga menor pro número nunca encostar */
+  .ledger th{font-size:10px;padding:8px 6px}
+  .ledger td{font-size:13px}
+  .ledger td>span{padding:9px 6px}
+  .ledger th:first-child,.ledger td:first-child>span{padding-left:12px}
+  .ledger th:last-child,.ledger td.saldo>span{padding-right:12px}
+  .ledger th:first-child{width:36%}
+  .ledger th:last-child{width:33%}
+  .dow{margin-left:4px;font-size:10px}
+
+  /* quatro tipos não cabem numa linha só: viram 2x2 */
+  .seg{flex-wrap:wrap}
+  .seg button{flex:1 1 calc(50% - 3px);font-size:13px;padding:11px 4px}
+
+  /* seis faixas de cor não cabem lado a lado: viram 3x2 */
+  .escala{flex-wrap:wrap;gap:6px}
+  .escala .fx{flex:1 1 calc(33.333% - 4px)}
+  .escala .fx i{height:26px}
+
+  /* valor e botão sempre visíveis, texto cede primeiro */
+  .item,.fixo{gap:8px}
+  .item b,.fixo b{font-size:13px}
+
+  .plano .pl.destaque>b{font-size:20px}
+  .metric{gap:10px}
+  .metric .v{font-size:17px}
+  .sheet{padding-left:14px;padding-right:14px}
+  .tabbar button{font-size:10px}
+}
+@media (max-width:360px){
+  .ledger td{font-size:12.5px}
+  .ledger th:first-child{width:33%}
+  .rm{padding:9px 9px;font-size:11px}
+  .tabbar button{font-size:9.5px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}

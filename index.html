@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" id="metaTema" content="#071624">
+<title>saldos — matheus bach</title>
+<link rel="icon" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/ledger.css">
+<link rel="stylesheet" href="css/resumo.css">
+<link rel="stylesheet" href="css/formularios.css">
+<link rel="stylesheet" href="css/navegacao.css">
+<link rel="stylesheet" href="css/sobreposicoes.css">
+<link rel="stylesheet" href="css/responsivo.css">
+</head>
+<body>
+
+
+<div class="field" aria-hidden="true">
+  <svg viewBox="-70 -70 140 140" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M -6.47 -6.25 C -8.82 -13.59 3.13 -44.69 -5.85 -55.69 C 26.33 -36.24 11.85 -11.05 5.03 -7.46 L 3.95 -8.09 C 10.19 -12.59 34.78 -8.67 40.93 -18.22 C 34.09 11.08 14.17 7.85 8.65 2.48 L 8.91 1.25 C 15.12 5.81 16.62 26.59 26.23 29.13 C 0.00 31.36 -3.09 15.90 0.31 8.99 L 1.56 8.86 C -0.85 16.18 -27.36 32.60 -26.60 46.07 C -40.48 13.15 -16.08 1.97 -8.46 3.08 L -7.95 4.23 C -15.65 4.19 -32.40 -13.09 -42.73 -9.08 C -20.54 -28.27 -6.85 -14.68 -5.54 -7.09 Z"/></svg>
+</div>
+
+<main class="app">
+  <header class="topbar" id="topbar">
+    <div class="brand">
+      <svg viewBox="-60 -60 120 120" aria-hidden="true"><path fill="currentColor" d="M -6.47 -6.25 C -8.82 -13.59 3.13 -44.69 -5.85 -55.69 C 26.33 -36.24 11.85 -11.05 5.03 -7.46 L 3.95 -8.09 C 10.19 -12.59 34.78 -8.67 40.93 -18.22 C 34.09 11.08 14.17 7.85 8.65 2.48 L 8.91 1.25 C 15.12 5.81 16.62 26.59 26.23 29.13 C 0.00 31.36 -3.09 15.90 0.31 8.99 L 1.56 8.86 C -0.85 16.18 -27.36 32.60 -26.60 46.07 C -40.48 13.15 -16.08 1.97 -8.46 3.08 L -7.95 4.23 C -15.65 4.19 -32.40 -13.09 -42.73 -9.08 C -20.54 -28.27 -6.85 -14.68 -5.54 -7.09 Z"/></svg>
+      <b id="brandName">matheus bach</b>
+    </div>
+    <button class="checkin" id="btnCheckin">
+      <span class="cal" id="checkinDay">0</span>
+      <span id="checkinTxt">dias lançados</span>
+    </button>
+  </header>
+
+  <section class="hero">
+    <div class="monthnav">
+      <button id="prevM" aria-label="Mês anterior"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <h1 id="monthTitle">—</h1>
+      <button id="nextM" aria-label="Próximo mês"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button id="btnCores" aria-label="O que as cores significam">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="8" width="5" height="8" rx="1.6"/><rect x="9.5" y="8" width="5" height="8" rx="1.6"/><rect x="16.5" y="8" width="5" height="8" rx="1.6"/></svg>
+      </button>
+    </div>
+    <div id="heroSingle">
+      <p class="lead" id="heroLead">você termina o mês com</p>
+      <p class="big" id="heroNum">R$ 0,00</p>
+      <div class="plano" id="plano"></div>
+      <p class="sub" id="heroSub"></p>
+    </div>
+  </section>
+
+  <section class="view" id="viewSaldos">
+    <div id="firstRun"></div>
+    <div class="colpick">
+      <select id="colSel" aria-label="Coluna visível">
+        <option value="diario">mostrar diário</option>
+        <option value="saida">mostrar saída</option>
+        <option value="entrada">mostrar entrada</option>
+      </select>
+    </div>
+    <div class="painels" id="painels"></div>
+  </section>
+
+  <section class="view mes" id="viewMes" hidden></section>
+  <section class="view set" id="viewSet" hidden></section>
+
+  <nav class="tabbar">
+    <button data-tab="saldos" aria-current="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5M4 9.5h16M4 14.5h16M20 19V5"/></svg>
+      saldos
+    </button>
+    <button class="fab" id="fabAdd" aria-label="Novo lançamento">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      adicionar
+    </button>
+    <button data-tab="mes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      mês
+    </button>
+    <button data-tab="set">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2 16.7 7.3M7.3 16.7l-2.1 2.1"/></svg>
+      perfil
+    </button>
+  </nav>
+</main>
+
+<div class="login" id="login" hidden>
+  <div class="login-card">
+    <svg viewBox="-60 -60 120 120" aria-hidden="true"><path fill="currentColor" d="M -6.47 -6.25 C -8.82 -13.59 3.13 -44.69 -5.85 -55.69 C 26.33 -36.24 11.85 -11.05 5.03 -7.46 L 3.95 -8.09 C 10.19 -12.59 34.78 -8.67 40.93 -18.22 C 34.09 11.08 14.17 7.85 8.65 2.48 L 8.91 1.25 C 15.12 5.81 16.62 26.59 26.23 29.13 C 0.00 31.36 -3.09 15.90 0.31 8.99 L 1.56 8.86 C -0.85 16.18 -27.36 32.60 -26.60 46.07 C -40.48 13.15 -16.08 1.97 -8.46 3.08 L -7.95 4.23 C -15.65 4.19 -32.40 -13.09 -42.73 -9.08 C -20.54 -28.27 -6.85 -14.68 -5.54 -7.09 Z"/></svg>
+    <h1>saldos</h1>
+    <p id="loginTxt">Entre com sua conta Google pra ver seus saldos em qualquer aparelho.</p>
+    <button class="btn w" id="btnGoogle">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" style="vertical-align:-3px;margin-right:9px"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/><path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21.4 7.6 24 12 24z"/><path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 0 1 0-4.6v-3H1.8a12 12 0 0 0 0 10.6l3.8-3z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.1l3.8 3c.9-2.7 3.4-4.3 6.4-4.3z"/></svg>
+      Entrar com Google
+    </button>
+    <p class="login-msg" id="loginMsg"></p>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
