@@ -59,7 +59,7 @@ export function render(){
     fr.innerHTML='<div class="note alerta">Seu salário parece estar cadastrado <b>duas vezes</b>: '+
       'a regra de recebimento lança '+money(valorPagamento(ui.atual.y,ui.atual.m))+' no dia útil, e ainda existe a conta fixa '+
       '"'+esc(dup.desc||"sem nome")+'" com o mesmo valor no dia '+dup.dia+'. '+
-      '<button class="linkish" data-delfixo="'+esc(dup.id)+'" style="text-align:left;margin-top:8px">remover a conta fixa duplicada</button></div>';
+      '<button class="linkish" data-apagarfixo="'+esc(dup.id)+'" style="text-align:left;margin-top:8px">remover a conta fixa duplicada</button></div>';
   }else if(!temPagamento()){
     fr.innerHTML='<div class="note alerta">Você não tem <b>recebimento cadastrado</b> para '+MESES[ui.atual.m]+
       '. Sem ele o app não sabe o tamanho do seu ciclo e não consegue calcular a diária. '+

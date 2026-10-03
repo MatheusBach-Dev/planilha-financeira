@@ -54,11 +54,37 @@ export function mesmoFixo(a,b){
   return assinatura(a)===assinatura(b);
 }
 
+export function historicoAte(f){
+  var hj=parseKey(HOJE_KEY);
+  var lim=fixoAtivo(f,HOJE_KEY)&&diaDoFixo(f,hj.y,hj.m)<HOJE_DIA?HOJE_KEY:mesAntes(HOJE_KEY);
+  if(f.ate&&f.ate<lim)lim=f.ate;
+  return f.desde&&f.desde>lim?null:lim;
+}
+
+export function fixoEncerrado(f){return !!f.ate&&historicoAte(f)===f.ate}
+
+function nomeFixo(f){return String(f.desc||"").trim().toLowerCase()}
+
+export function candidatosSubst(novo,antigo,lista){
+  var de=novo.desde||"";
+  if(!de)return [];
+  return (lista||state.config.fixos||[]).filter(function(x){
+    if(x.tipo!==novo.tipo||!fixoAtivo(x,de))return false;
+    if(antigo&&serieDoFixo(x)===serieDoFixo(antigo))return false;
+    return (nomeFixo(x)&&nomeFixo(x)===nomeFixo(novo))||(x.cat&&x.cat===novo.cat);
+  });
+}
+
+export function substPadrao(novo,cands){
+  var igual=cands.filter(function(x){return nomeFixo(x)&&nomeFixo(x)===nomeFixo(novo)})[0];
+  return igual?igual.id:"";
+}
+
 export function planoFixo(antigo,novo,lista){
   if(!antigo)return {acao:"novo"};
   var de=novo.desde||"",ini=antigo.desde||"";
   if(antigo.ate&&de>antigo.ate)
-    return {erro:"Esse período vai só até "+mesExtenso(antigo.ate)+". Pra mudar depois disso, edite o período seguinte."};
+    return {erro:"Essa conta vale só até "+mesExtenso(antigo.ate)+", então não dá pra mudar a partir de "+mesExtenso(de)+"."};
   if(de>ini&&!mesmoFixo(antigo,novo))return {acao:"divide"};
   var ant=fixoAnterior(antigo,lista);
   if(ant&&de<=(ant.desde||""))

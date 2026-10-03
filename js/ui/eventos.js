@@ -2,7 +2,7 @@ import {state, ui} from "../core/estado.js";
 import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
+import {apagarFixo, aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {render} from "./render.js";
@@ -50,6 +50,8 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
   
     var df=e.target.closest("[data-delfixo]");
     if(df)return removerFixo(df.dataset.delfixo);
+    var af=e.target.closest("[data-apagarfixo]");
+    if(af)return apagarFixo(af.dataset.apagarfixo);
     var dp=e.target.closest("[data-delpag]");
     if(dp){
       if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");

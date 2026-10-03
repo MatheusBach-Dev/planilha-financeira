@@ -1,4 +1,4 @@
-import {calcular, inicialDe, planoFixo, serieDoFixo, textoPeriodoFixo} from "../core/calculo.js";
+import {calcular, candidatosSubst, fixoEncerrado, historicoAte, inicialDe, mesmoFixo, planoFixo, substPadrao, textoPeriodoFixo} from "../core/calculo.js";
 import {dadosDia} from "../core/ciclo.js";
 import {COR_NEGATIVO, corPorPercentual} from "../core/cores.js";
 import {HOJE_DIA, HOJE_KEY, diasNoMes, key, mesAntes, parseKey} from "../core/datas.js";
@@ -8,7 +8,7 @@ import {explicaPagamento, mesExtenso, regraPagamento, valorPagamento} from "../c
 import {aplicarMascara, lerMoney} from "./perfil.js";
 
 export const fe={diaAberto:null,novoTipo:"diario",novoMes:null,novoEditando:null,
-  fixoRegra:"fixo",fixoEditando:null,pagRegra:"util",pagEditando:null};
+  fixoRegra:"fixo",fixoEditando:null,fixoSubst:undefined,fixoSubstSig:null,fixoSubstManual:false,pagRegra:"util",pagEditando:null};
 
 export var scrim=$("scrim"),sheet=$("sheet"),sheetMascara=false;
 
@@ -222,7 +222,17 @@ export function abrirNovoFixo(id){
   fe.novoTipo=f?f.tipo:"saida";
   fe.fixoRegra=f?(f.regra||"fixo"):"fixo";
   var nVal=f?(f.regra==="fixo"||!f.regra?(+f.dia||10):(+f.n||1)):10;
-  var temPeriodos=f&&(state.config.fixos||[]).some(function(x){return x.id!==f.id&&serieDoFixo(x)===serieDoFixo(f)});
+  fe.fixoSubst=undefined;fe.fixoSubstSig=null;fe.fixoSubstManual=false;
+  var apagar="";
+  if(f){
+    var hist=historicoAte(f);
+    if(!hist)apagar='<button class="linkish" data-delfixo="'+esc(f.id)+'" style="color:var(--neg-deep)">apagar esta conta fixa</button>';
+    else{
+      if(!fixoEncerrado(f))apagar='<button class="linkish" data-delfixo="'+esc(f.id)+'" style="color:var(--neg-deep)">parar a partir de hoje</button>'+
+        '<p class="sh-sub tipoDesc" style="margin-top:0">Ela sai dos dias de hoje em diante. Até '+mesExtenso(hist)+' continua no histórico, do jeito que aconteceu.</p>';
+      apagar+='<button class="linkish" data-apagarfixo="'+esc(f.id)+'" style="color:var(--text-dim)">apagar de todos os meses, inclusive os que já passaram</button>';
+    }
+  }
   function op(v,l){return '<option value="'+v+'"'+(fe.fixoRegra===v?" selected":"")+'>'+l+'</option>'}
   abrirSheet(
     '<h3>'+(f?"editar conta fixa":"conta fixa")+'</h3>'+
@@ -243,9 +253,10 @@ export function abrirNovoFixo(id){
     '<p class="sh-sub tipoDesc" style="margin-top:-6px">Com isso ligado, se o dia escolhido vier antes do dia em que o salário cai, a conta é jogada pro dia do salário. Desligue nas contas que você paga com a sobra do mês anterior.</p>'+
     '<label class="chk" id="wrapCartaoF"><input type="checkbox" id="fCartao"'+(f&&f.cartao?" checked":"")+'> cai no cartão</label>'+
     '<label class="fld"><span>A partir do mês</span><input id="fDesde" type="month" value="'+esc(f?f.desde||"":key(ui.atual.y,ui.atual.m))+'"></label>'+
-    (f?'<p class="sh-sub tipoDesc" id="fAvisoDesde" style="margin-top:-6px"></p>':"")+
+    '<div id="fWrapSubst"></div>'+
+    '<p class="sh-sub tipoDesc" id="fAvisoDesde" style="margin-top:-6px"></p>'+
     '<button class="btn w" id="fSalvar">'+(f?"Salvar alterações":"Salvar conta fixa")+'</button>'+
-    (f?'<button class="linkish" data-delfixo="'+esc(f.id)+'" style="color:var(--neg-deep)">'+(temPeriodos?"apagar este período":"apagar esta conta fixa")+'</button>':"")
+    apagar
   );
   atualizaSeg();
   atualizaRegraFixo();
@@ -268,20 +279,63 @@ export function lerFormFixo(antigo){
   };
 }
 
+var NOME_TIPO={entrada:"entrada",saida:"saída",economia:"investimento",diario:"diário"};
+
+function nomeEntreAspas(f){return "“"+(f.desc||"sem nome")+"” ("+money(f.valor)+")"}
+
 export function atualizaAvisoFixo(){
   var av=$("fAvisoDesde");
   if(!av)return;
   var lista=state.config.fixos||[];
-  var antigo=lista.filter(function(x){return x.id===fe.fixoEditando})[0];
-  if(!antigo)return;
-  var novo=lerFormFixo(antigo),p=planoFixo(antigo,novo,lista);
-  if(p.erro)av.textContent=p.erro;
-  else if(p.acao==="divide")
-    av.textContent="A mudança vale de "+mesExtenso(novo.desde)+" em diante. Até "+mesExtenso(mesAntes(novo.desde))+" fica como estava.";
-  else if(novo.desde!==antigo.desde)
-    av.textContent="A conta passa a valer a partir de "+mesExtenso(novo.desde)+
-      (p.anterior?", e o período anterior vai até "+mesExtenso(mesAntes(novo.desde)):"")+".";
-  else av.textContent="Vai investir ou pagar outro valor a partir de um mês? Troque o valor e escolha aqui o mês da mudança. Os meses antes dele continuam como estão.";
+  var antigo=fe.fixoEditando?lista.filter(function(x){return x.id===fe.fixoEditando})[0]||null:null;
+  var novo=lerFormFixo(antigo),msgs=[];
+  var cands=candidatosSubst(novo,antigo,lista),subst=renderSubst(novo,antigo,cands);
+  if(antigo){
+    var p=planoFixo(antigo,novo,lista);
+    if(p.erro)msgs.push(p.erro);
+    else if(p.acao==="divide")
+      msgs.push("A mudança vale de "+mesExtenso(novo.desde)+" em diante. Até "+mesExtenso(mesAntes(novo.desde))+" fica como estava.");
+    else if(novo.desde!==antigo.desde)
+      msgs.push("A conta passa a valer a partir de "+mesExtenso(novo.desde)+
+        (p.anterior?", e o período anterior vai até "+mesExtenso(mesAntes(novo.desde)):"")+".");
+    else if(!mesmoFixo(antigo,novo)&&(novo.desde||"")<HOJE_KEY)
+      msgs.push("Assim muda também os meses que já passaram. Pra guardar o histórico, escolha aqui o mês em que a mudança começa.");
+    else if(!cands.length)
+      msgs.push("Vai investir ou pagar outro valor a partir de um mês? Troque o valor e escolha aqui o mês da mudança. Os meses antes dele continuam como estão.");
+  }
+  if(cands.length){
+    var alvo=cands.filter(function(x){return x.id===subst})[0];
+    if(alvo)msgs.push(nomeEntreAspas(alvo)+" para em "+mesExtenso(mesAntes(novo.desde))+". De "+mesExtenso(novo.desde)+" em diante vale só esta.");
+    else{
+      var tot=cands.reduce(function(s,x){return s+(+x.valor||0)},+novo.valor||0);
+      msgs.push("Soma com "+cands.map(nomeEntreAspas).join(", ")+": a partir de "+mesExtenso(novo.desde)+
+        " são "+money(tot)+" por mês em "+(NOME_TIPO[novo.tipo]||novo.tipo)+".");
+    }
+  }
+  av.textContent=msgs.join(" ");
+  av.style.display=msgs.length?"":"none";
+}
+
+function renderSubst(novo,antigo,cands){
+  var w=$("fWrapSubst"),s=$("fSubst");
+  if(s&&s.value!==fe.fixoSubst){fe.fixoSubst=s.value;fe.fixoSubstManual=true}
+  if(!cands.length){w.innerHTML="";fe.fixoSubstSig=null;return ""}
+  var ids=cands.map(function(x){return x.id});
+  var sel=fe.fixoSubst;
+  if(!fe.fixoSubstManual||sel===undefined||(sel&&ids.indexOf(sel)<0))sel=antigo?"":substPadrao(novo,cands);
+  var sig=cands.map(function(x){return x.id+":"+x.valor+":"+x.desc}).join("|");
+  if(s&&sig===fe.fixoSubstSig){if(s.value!==sel)s.value=sel}
+  else{
+    fe.fixoSubstSig=sig;
+    w.innerHTML='<label class="fld"><span>Substitui outra conta?</span><select id="fSubst">'+
+      '<option value="">Não, soma com '+(cands.length>1?"as outras":"a que já existe")+'</option>'+
+      cands.map(function(x){
+        return '<option value="'+esc(x.id)+'"'+(sel===x.id?" selected":"")+'>Sim, entra no lugar de '+esc(nomeEntreAspas(x))+'</option>';
+      }).join("")+
+    '</select></label>';
+  }
+  fe.fixoSubst=sel;
+  return sel;
 }
 
 export function atualizaRegraFixo(){

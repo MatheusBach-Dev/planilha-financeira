@@ -1,5 +1,5 @@
 import {previewAperto} from "../core/aperto.js";
-import {fixoAnterior, planoFixo, serieDoFixo} from "../core/calculo.js";
+import {candidatosSubst, historicoAte, planoFixo, serieDoFixo} from "../core/calculo.js";
 import {cicloDoDia} from "../core/ciclo.js";
 import {chaveDia, diasNoMes, hojeZero, key, mesAntes, parseKey, somaMes} from "../core/datas.js";
 import {localSave, mesDoc, padraoConfig, state, ui} from "../core/estado.js";
@@ -100,6 +100,8 @@ export function salvarFixo(){
   if(!novo.valor)return toast("Coloque um valor.");
   var p=planoFixo(antigo,novo,lista);
   if(p.erro)return toast(p.erro);
+  var sid=$("fSubst")?$("fSubst").value:"";
+  var subst=sid?candidatosSubst(novo,antigo,lista).filter(function(x){return x.id===sid})[0]:null;
   if(p.acao==="divide"){
     novo.id=uid();
     novo.serie=serieDoFixo(antigo);
@@ -120,11 +122,20 @@ export function salvarFixo(){
     novo.id=uid();
     lista.push(novo);
   }
+  if(subst)lista=encerrarSerie(lista,serieDoFixo(subst),mesAntes(novo.desde));
   state.config.fixos=lista;
   fe.fixoEditando=null;
   salvarConfig();fecharSheet();render();
-  toast(p.acao==="divide"?"Muda de "+mesExtenso(novo.desde)+" em diante. Os meses antes ficaram como estavam."
+  toast(subst?"“"+(subst.desc||"sem nome")+"” para em "+mesExtenso(mesAntes(novo.desde))+". De "+mesExtenso(novo.desde)+" em diante vale só esta."
+    :p.acao==="divide"?"Muda de "+mesExtenso(novo.desde)+" em diante. Os meses antes ficaram como estavam."
     :antigo?"Conta fixa atualizada.":"Conta fixa salva.");
+}
+
+function encerrarSerie(lista,serie,fim){
+  return lista.filter(function(x){return serieDoFixo(x)!==serie||!x.desde||x.desde<=fim}).map(function(x){
+    if(serieDoFixo(x)!==serie||(x.ate&&x.ate<=fim))return x;
+    return Object.assign({},x,{ate:fim});
+  });
 }
 
 export function removerFixo(id){
@@ -132,15 +143,24 @@ export function removerFixo(id){
   var lista=state.config.fixos||[];
   var alvo=lista.filter(function(x){return x.id===id})[0];
   if(!alvo)return;
-  var ant=fixoAnterior(alvo,lista);
-  state.config.fixos=lista.filter(function(x){return x.id!==id}).map(function(x){
-    if(!ant||x.id!==ant.id)return x;
-    var y=Object.assign({},x);
-    if(alvo.ate)y.ate=alvo.ate;else delete y.ate;
-    return y;
-  });
+  var hist=historicoAte(alvo);
+  if(hist&&hist===alvo.ate)return toast("Essa conta já terminou em "+mesExtenso(hist)+".");
+  state.config.fixos=hist
+    ? lista.map(function(x){return x.id===id?Object.assign({},x,{ate:hist}):x})
+    : lista.filter(function(x){return x.id!==id});
   fe.fixoEditando=null;salvarConfig();fecharSheet();render();
-  toast(ant?"Período removido. Volta a valer o anterior.":"Conta fixa removida.");
+  toast(hist?"“"+(alvo.desc||"sem nome")+"” sai de hoje em diante. Até "+mesExtenso(hist)+" continua no histórico."
+    :"Conta fixa removida.");
+}
+
+export function apagarFixo(id){
+  if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
+  var alvo=(state.config.fixos||[]).filter(function(x){return x.id===id})[0];
+  if(!alvo)return;
+  if(!confirm("Apagar “"+(alvo.desc||"sem nome")+"” de todos os meses, inclusive dos que já passaram? O saldo desses meses vai mudar."))return;
+  state.config.fixos=state.config.fixos.filter(function(x){return x.id!==id});
+  fe.fixoEditando=null;salvarConfig();fecharSheet();render();
+  toast("Conta fixa apagada de todos os meses.");
 }
 
 export function mover(d){
