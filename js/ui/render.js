@@ -5,6 +5,7 @@ import {HOJE_KEY, fmtDia, fmtDiaSem, key, maisDias, somaMes} from "../core/datas
 import {state, ui} from "../core/estado.js";
 import {$, MESES, esc, money} from "../core/formato.js";
 import {temPagamento, valorPagamento} from "../core/pagamento.js";
+import {iaDisponivel} from "../dados/ia.js";
 import {renderPaineis} from "./ledger.js";
 import {renderMes} from "./mes.js";
 import {renderSet} from "./perfil.js";
@@ -26,6 +27,7 @@ export function render(){
   ui.permitido=plano?(plano.base||plano.diaria):r.permitido;
 
   $("brandName").textContent=state.config.nome||"saldos";
+  $("btnIA").hidden=!iaDisponivel();
   var fim=somaMes(ui.atual,2);
   $("monthTitle").innerHTML=ehLargo()
     ? MESES[ui.atual.m]+" a "+MESES[fim.m]+" <em>"+(ui.atual.y===fim.y?ui.atual.y:ui.atual.y+"–"+fim.y)+"</em>"

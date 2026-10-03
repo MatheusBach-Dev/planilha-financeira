@@ -4,6 +4,7 @@ import {cicloDoDia} from "../core/ciclo.js";
 import {chaveDia, diasNoMes, hojeZero, key, mesAntes, parseKey, somaMes} from "../core/datas.js";
 import {localSave, mesDoc, padraoConfig, state, ui} from "../core/estado.js";
 import {$, money, uid} from "../core/formato.js";
+import {adicionarLancamento, editarLancamento, removerLancamento} from "../core/lancamentos.js";
 import {mesExtenso} from "../core/pagamento.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
@@ -218,14 +219,9 @@ export function salvarNovo(){
   var dia=Math.max(1,Math.min(diasNoMes(pk.y,pk.m),+$("nDia").value||1));
   var cartao=$("nCartao").checked&&fe.novoTipo!=="entrada"&&fe.novoTipo!=="economia";
   if(fe.novoEditando){
-    var docE=mesDoc(k),achou=false;
-    docE.lancamentos=docE.lancamentos.map(function(l){
-      if(l.id!==fe.novoEditando)return l;
-      achou=true;
-      return {id:l.id,desc:desc,dia:dia,tipo:fe.novoTipo,valor:val,cartao:cartao,cat:cat};
-    });
+    var editado=editarLancamento(k,fe.novoEditando,{desc:desc,dia:dia,tipo:fe.novoTipo,valor:val,cartao:cartao,cat:cat});
     fe.novoEditando=null;
-    if(!achou)return toast("Esse lançamento não existe mais.");
+    if(!editado)return toast("Esse lançamento não existe mais.");
     salvarMes(k);fecharSheet();render();
     return toast("Lançamento atualizado.");
   }
@@ -233,12 +229,7 @@ export function salvarNovo(){
     state.config.fixos=(state.config.fixos||[]).concat([{id:uid(),desc:desc,dia:dia,tipo:fe.novoTipo,valor:val,cartao:cartao,cat:cat,desde:k}]);
     salvarConfig();
   }else{
-    var doc=mesDoc(k);
-    doc.lancamentos.push({id:uid(),desc:desc,dia:dia,tipo:fe.novoTipo,valor:val,cartao:cartao,cat:cat});
-    if(fe.novoTipo==="diario"&&doc.conferidos.indexOf(dia)<0){
-      doc.conferidos.push(dia);
-      doc.conferidos.sort(function(a,b){return a-b});
-    }
+    adicionarLancamento(k,{desc:desc,dia:dia,tipo:fe.novoTipo,valor:val,cartao:cartao,cat:cat});
     salvarMes(k);
   }
   fecharSheet();render();
@@ -256,7 +247,7 @@ export function remover(id,mk){
     if(!confirm("Pular esta conta fixa só neste mês?"))return;
     if(d.pulados.indexOf(fid)<0)d.pulados.push(fid);
   }else{
-    d.lancamentos=d.lancamentos.filter(function(l){return l.id!==id});
+    removerLancamento(k,id);
   }
   salvarMes(k);render();
   if(fe.diaAberto)abrirDia(fe.diaAberto.dia,fe.diaAberto.k);
