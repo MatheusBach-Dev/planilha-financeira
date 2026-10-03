@@ -34,6 +34,24 @@ export function temPagamento(y,m){
 
 export function valorPagamento(y,m){var p=regraPagamento(y,m);return p?+p.valor||0:0}
 
+export function ehPagamento(dt){
+  var d=diaPagamento(dt.getFullYear(),dt.getMonth());
+  return d>0&&d===dt.getDate();
+}
+
+export function primeiroPagamento(){
+  var lista=state.config.pagamentos||[],menor=null;
+  for(var i=0;i<lista.length;i++){
+    var p=lista[i];
+    if(!(+p.valor>0))continue;
+    if(!p.desde)return null;
+    if(!menor||p.desde<menor)menor=p.desde;
+  }
+  if(!menor)return null;
+  var pk=parseKey(menor);
+  return new Date(pk.y,pk.m,diaPagamento(pk.y,pk.m));
+}
+
 export function textoRegraPag(p){
   if(p.regra==="ultimoUtil")return "último dia útil";
   if(p.regra==="fixo")return "dia "+(+p.n||1)+(p.ajuste==="adia"?", adiando":", antecipando");

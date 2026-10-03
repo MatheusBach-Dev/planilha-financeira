@@ -92,6 +92,14 @@ export function planoFixo(antigo,novo,lista){
   return {acao:"edita",anterior:ant};
 }
 
+export function faltaMeta(sal,pct,feito){
+  pct=Math.max(0,Math.min(100,+pct||0));
+  var alvo=sal*pct/100;
+  if(feito>=alvo-0.005)return 0;
+  if(sal>0&&Math.round(feito/sal*1000)>=Math.round(pct*10))return 0;
+  return alvo-feito;
+}
+
 export function fixosDoMes(k){
   var d=mesLeitura(k),out=[],pk=parseKey(k);
   (state.config.fixos||[]).forEach(function(f){

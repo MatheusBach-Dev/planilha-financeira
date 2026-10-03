@@ -1,9 +1,8 @@
 import {apertoDoCiclo, planoAperto} from "./aperto.js";
-import {calcular, inicialDe} from "./calculo.js";
-import {cent, chaveDia, hoje, key, parseKey, somaMes} from "./datas.js";
+import {calcular, faltaMeta, inicialDe} from "./calculo.js";
+import {cent, chaveDia, hoje, hojeZero, key, maisDias, parseKey, somaMes} from "./datas.js";
 import {state, ui} from "./estado.js";
-import {diaPagamento, temPagamento, valorPagamento} from "./pagamento.js";
-import {mov} from "../ui/mes.js";
+import {diaPagamento, ehPagamento, primeiroPagamento, temPagamento, valorPagamento} from "./pagamento.js";
 
 export function saldoNaData(dt){
   var k=key(dt.getFullYear(),dt.getMonth());
@@ -31,45 +30,69 @@ export function somaNoIntervalo(a,b){
 
 export function infoCiclo(){
   if(!temPagamento())return null;
-  var hj=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+  var hj=hojeZero();
+  var inicio=inicioDoCiclo(hj),proxPag=proxPagamentoDepois(hj);
+  if(!inicio||!proxPag)return null;
+  var pre=!ehPagamento(inicio);
   var pagMes=diaPagamento(hj.getFullYear(),hj.getMonth());
-  var inicio,proxPag;
-  if(hj.getDate()>=pagMes){
-    inicio=new Date(hj.getFullYear(),hj.getMonth(),pagMes);
-    var nx=somaMes({y:hj.getFullYear(),m:hj.getMonth()},1);
-    proxPag=new Date(nx.y,nx.m,diaPagamento(nx.y,nx.m));
-  }else{
-    var pv=somaMes({y:hj.getFullYear(),m:hj.getMonth()},-1);
-    inicio=new Date(pv.y,pv.m,diaPagamento(pv.y,pv.m));
-    proxPag=new Date(hj.getFullYear(),hj.getMonth(),pagMes);
-  }
-  var fim=new Date(proxPag.getFullYear(),proxPag.getMonth(),proxPag.getDate());
-  fim.setDate(fim.getDate()-1);
+  var fim=maisDias(proxPag,-1);
   var saldoFim=saldoNaData(fim);
   var restantes=Math.max(1,Math.round((fim-hj)/86400000)+1);
   var total=Math.round((fim-inicio)/86400000)+1;
   var mov=somaNoIntervalo(inicio,fim);
   return {inicio:inicio,fim:fim,proxPag:proxPag,saldoFim:saldoFim,restantes:restantes,
-          total:total,naSeca:hj.getDate()<pagMes,mov:mov,
+          total:total,naSeca:pre||hj.getDate()<pagMes,mov:mov,pre:pre,salario:salarioDoCiclo(inicio),
           ateProxPag:Math.round((proxPag-hj)/86400000)};
+}
+
+// último dia de pagamento até dt (inclusive), ou null se o salário ainda não começou
+export function pagamentoAte(dt){
+  var pp=primeiroPagamento();
+  if(pp&&dt<pp)return null;
+  var pk={y:dt.getFullYear(),m:dt.getMonth()};
+  for(var i=0;i<36;i++){
+    var d=diaPagamento(pk.y,pk.m);
+    if(d>0&&(i>0||d<=dt.getDate()))return new Date(pk.y,pk.m,d);
+    pk=somaMes(pk,-1);
+  }
+  return null;
 }
 
 export function proxPagamentoDepois(dt){
   var pk={y:dt.getFullYear(),m:dt.getMonth()};
-  var d=diaPagamento(pk.y,pk.m);
-  if(d>dt.getDate())return new Date(pk.y,pk.m,d);
-  var nx=somaMes(pk,1);
-  return new Date(nx.y,nx.m,diaPagamento(nx.y,nx.m));
+  for(var i=0;i<36;i++){
+    var d=diaPagamento(pk.y,pk.m);
+    if(d>0&&(i>0||d>dt.getDate()))return new Date(pk.y,pk.m,d);
+    pk=somaMes(pk,1);
+  }
+  return null;
+}
+
+// antes do primeiro salário existe um pré-ciclo: do dia 1 daquele mês até a véspera do salário
+export function inicioPreCiclo(){
+  var p=primeiroPagamento();
+  return p&&p.getDate()>1?new Date(p.getFullYear(),p.getMonth(),1):null;
+}
+
+export function inicioDoCiclo(dt){
+  var p=pagamentoAte(dt);
+  if(p)return p;
+  var pre=inicioPreCiclo();
+  return pre&&pre<=dt?pre:null;
+}
+
+export function salarioDoCiclo(inicio){
+  return ehPagamento(inicio)?valorPagamento(inicio.getFullYear(),inicio.getMonth()):0;
 }
 
 export function baseDoCiclo(inicio,fim){
   var antes=new Date(inicio.getFullYear(),inicio.getMonth(),inicio.getDate()-1);
   var saldoAntes=saldoNaData(antes);
   var mov=somaNoIntervalo(inicio,fim);
-  var sal=valorPagamento(inicio.getFullYear(),inicio.getMonth());
+  var sal=salarioDoCiclo(inicio);
   var reserva=sal*Math.max(0,Math.min(100,+state.config.metaReserva||0))/100;
   var alvo=sal*Math.max(0,Math.min(100,+state.config.metaEconomia||0))/100;
-  var falta=Math.max(0,alvo-mov.economia);
+  var falta=faltaMeta(sal,state.config.metaEconomia,mov.economia);
   var dias=Math.round((fim-inicio)/86400000)+1;
   var bruto=saldoAntes+mov.entrada-mov.saida-mov.economia;
   var disponivel=bruto-falta-reserva;
@@ -77,30 +100,38 @@ export function baseDoCiclo(inicio,fim){
   if(disponivel<=0)disponivel=bruto;
   return {base:dias>0?Math.max(0,Math.floor(disponivel/dias*100)/100):0,dias:dias,disponivel:disponivel,
           reserva:reserva,investir:alvo,jaInvestido:mov.economia,faltaInvestir:falta,
-          inicio:inicio,fim:fim,gasto:mov.diario};
+          inicio:inicio,fim:fim,gasto:mov.diario,salario:sal};
 }
 
 export var mapaDiaria={},cicloDoDia={};
 
-export function montarDiarias(){
+// nMeses = quantos meses aparecem lado a lado a partir de ui.atual; o mês de hoje entra sempre
+export function montarDiarias(nMeses){
   mapaDiaria={};cicloDoDia={};
-  if(!temPagamento())return;
-  var ini=somaMes(ui.atual,-1),fimMes=somaMes(ui.atual,3);
-  var cur=new Date(ini.y,ini.m,diaPagamento(ini.y,ini.m)||1);
-  var limite=new Date(fimMes.y,fimMes.m,0);
+  if(!(state.config.pagamentos||[]).some(function(p){return +p.valor>0}))return;
+  var hj=hojeZero(),n=Math.max(1,+nMeses||3);
+  var a=somaMes(ui.atual,-1),b=somaMes(ui.atual,n);
+  var ini=new Date(a.y,a.m,1),limite=new Date(b.y,b.m,0);
+  var hjIni=new Date(hj.getFullYear(),hj.getMonth()-1,1),hjFim=new Date(hj.getFullYear(),hj.getMonth()+2,0);
+  if(hjIni<ini)ini=hjIni;
+  if(hjFim>limite)limite=hjFim;
+  var pre=inicioPreCiclo();
+  var cur=inicioDoCiclo(ini)||ini;
   var ciclo=null,apPlano=null,divida=0,guarda=0,cacheMes={};
   function diarioEm(dt){
     var k=key(dt.getFullYear(),dt.getMonth());
     if(!cacheMes[k])cacheMes[k]=calcular(k,inicialDe(k));
     return cacheMes[k].linhas[dt.getDate()-1].diario;
   }
-  while(cur<=limite&&guarda++<800){
-    if(cur.getDate()===diaPagamento(cur.getFullYear(),cur.getMonth())){
+  while(cur<=limite&&guarda++<2500){
+    if(ehPagamento(cur)||(pre&&+cur===+pre)){
       var prox=proxPagamentoDepois(cur);
-      var fim=new Date(prox.getFullYear(),prox.getMonth(),prox.getDate()-1);
-      ciclo=baseDoCiclo(cur,fim);
-      var ap=apertoDoCiclo(cur,fim);
-      apPlano=ap?planoAperto(ciclo,ap):null;
+      if(prox){
+        var fim=maisDias(prox,-1);
+        ciclo=baseDoCiclo(cur,fim);
+        var ap=apertoDoCiclo(cur,fim);
+        apPlano=ap?planoAperto(ciclo,ap):null;
+      }else{ciclo=null;apPlano=null}
       divida=0;
     }
     if(ciclo){
