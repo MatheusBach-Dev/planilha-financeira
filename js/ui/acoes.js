@@ -1,11 +1,13 @@
 import {previewAperto} from "../core/aperto.js";
+import {fixoAnterior, planoFixo, serieDoFixo} from "../core/calculo.js";
 import {cicloDoDia} from "../core/ciclo.js";
-import {chaveDia, diasNoMes, hojeZero, key, parseKey, somaMes} from "../core/datas.js";
+import {chaveDia, diasNoMes, hojeZero, key, mesAntes, parseKey, somaMes} from "../core/datas.js";
 import {localSave, mesDoc, padraoConfig, state, ui} from "../core/estado.js";
 import {$, money, uid} from "../core/formato.js";
+import {mesExtenso} from "../core/pagamento.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {abrirDia, fe, fecharSheet} from "./folhas.js";
+import {abrirDia, fe, fecharSheet, lerFormFixo} from "./folhas.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {render} from "./render.js";
 import {aplicarTema} from "./tema.js";
@@ -92,29 +94,53 @@ export function salvarPagamento(){
 
 export function salvarFixo(){
   if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
-  var val=lerMoney($("fVal"));
-  if(!val)return toast("Coloque um valor.");
-  var n=Math.max(1,+($("fN")||{value:1}).value||1);
   var lista=(state.config.fixos||[]).slice();
   var antigo=fe.fixoEditando?lista.filter(function(x){return x.id===fe.fixoEditando})[0]:null;
-  var novo={
-    id:antigo?antigo.id:uid(),
-    desc:$("fDesc").value.trim()||($("fCat")?$("fCat").value:""),
-    cat:$("fCat")?$("fCat").value:"",
-    regra:fe.fixoRegra,
-    dia:fe.fixoRegra==="fixo"?Math.min(31,n):(antigo?antigo.dia:1),
-    n:n,
-    espera:$("fEspera").checked,
-    tipo:fe.novoTipo,valor:val,
-    cartao:$("fCartao").checked&&fe.novoTipo==="saida",
-    desde:antigo?antigo.desde:key(ui.atual.y,ui.atual.m)
-  };
-  if(antigo)lista=lista.map(function(x){return x.id===antigo.id?novo:x});
-  else lista.push(novo);
+  var novo=lerFormFixo(antigo);
+  if(!novo.valor)return toast("Coloque um valor.");
+  var p=planoFixo(antigo,novo,lista);
+  if(p.erro)return toast(p.erro);
+  if(p.acao==="divide"){
+    novo.id=uid();
+    novo.serie=serieDoFixo(antigo);
+    if(antigo.ate)novo.ate=antigo.ate;
+    var i=lista.indexOf(antigo);
+    lista[i]=Object.assign({},antigo,{ate:mesAntes(novo.desde)});
+    lista.splice(i+1,0,novo);
+  }else if(antigo){
+    novo.id=antigo.id;
+    if(antigo.serie)novo.serie=antigo.serie;
+    if(antigo.ate)novo.ate=antigo.ate;
+    lista=lista.map(function(x){
+      if(x.id===antigo.id)return novo;
+      if(p.anterior&&x.id===p.anterior.id)return Object.assign({},x,{ate:mesAntes(novo.desde)});
+      return x;
+    });
+  }else{
+    novo.id=uid();
+    lista.push(novo);
+  }
   state.config.fixos=lista;
   fe.fixoEditando=null;
   salvarConfig();fecharSheet();render();
-  toast(antigo?"Conta fixa atualizada.":"Conta fixa salva.");
+  toast(p.acao==="divide"?"Muda de "+mesExtenso(novo.desde)+" em diante. Os meses antes ficaram como estavam."
+    :antigo?"Conta fixa atualizada.":"Conta fixa salva.");
+}
+
+export function removerFixo(id){
+  if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
+  var lista=state.config.fixos||[];
+  var alvo=lista.filter(function(x){return x.id===id})[0];
+  if(!alvo)return;
+  var ant=fixoAnterior(alvo,lista);
+  state.config.fixos=lista.filter(function(x){return x.id!==id}).map(function(x){
+    if(!ant||x.id!==ant.id)return x;
+    var y=Object.assign({},x);
+    if(alvo.ate)y.ate=alvo.ate;else delete y.ate;
+    return y;
+  });
+  fe.fixoEditando=null;salvarConfig();fecharSheet();render();
+  toast(ant?"Período removido. Volta a valer o anterior.":"Conta fixa removida.");
 }
 
 export function mover(d){

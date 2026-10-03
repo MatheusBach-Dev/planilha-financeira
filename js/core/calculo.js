@@ -1,6 +1,6 @@
-import {HOJE_DIA, HOJE_KEY, diasNoMes, key, nEsimoDiaUtil, parseKey, somaMes, ultimoDiaUtil} from "./datas.js";
+import {HOJE_DIA, HOJE_KEY, diasNoMes, key, mesAntes, nEsimoDiaUtil, parseKey, somaMes, ultimoDiaUtil} from "./datas.js";
 import {mesLeitura, state, temDados} from "./estado.js";
-import {diaPagamento, regraPagamento, temPagamento} from "./pagamento.js";
+import {diaPagamento, mesExtenso, regraPagamento, temPagamento} from "./pagamento.js";
 
 export function diaDoFixo(f,y,m){
   var r=f.regra||"fixo",dias=diasNoMes(y,m),d;
@@ -25,11 +25,52 @@ export function textoRegraFixo(f){
   return "dia "+(+f.dia||1);
 }
 
+export function fixoAtivo(f,k){return !(f.desde&&k<f.desde)&&!(f.ate&&k>f.ate)}
+
+export function textoPeriodoFixo(f){
+  if(f.desde&&f.ate)return f.desde===f.ate?"só em "+mesExtenso(f.desde):"de "+mesExtenso(f.desde)+" até "+mesExtenso(f.ate);
+  if(f.ate)return "até "+mesExtenso(f.ate);
+  if(f.desde)return "de "+mesExtenso(f.desde)+" em diante";
+  return "todo mês";
+}
+
+export function serieDoFixo(f){return f.serie||f.id}
+
+export function fixoAnterior(f,lista){
+  if(!f.desde)return null;
+  var ate=mesAntes(f.desde);
+  return (lista||state.config.fixos||[]).filter(function(x){
+    return x.id!==f.id&&serieDoFixo(x)===serieDoFixo(f)&&x.ate===ate;
+  })[0]||null;
+}
+
+export function mesmoFixo(a,b){
+  function assinatura(f){
+    var r=f.regra||"fixo";
+    return [+f.valor||0,f.desc||"",f.cat||"",f.tipo,r,
+            r==="fixo"?(+f.dia||1):(r==="util"||r==="aposPagamento"?(+f.n||0):0),
+            !!f.espera,!!f.cartao].join("|");
+  }
+  return assinatura(a)===assinatura(b);
+}
+
+export function planoFixo(antigo,novo,lista){
+  if(!antigo)return {acao:"novo"};
+  var de=novo.desde||"",ini=antigo.desde||"";
+  if(antigo.ate&&de>antigo.ate)
+    return {erro:"Esse período vai só até "+mesExtenso(antigo.ate)+". Pra mudar depois disso, edite o período seguinte."};
+  if(de>ini&&!mesmoFixo(antigo,novo))return {acao:"divide"};
+  var ant=fixoAnterior(antigo,lista);
+  if(ant&&de<=(ant.desde||""))
+    return {erro:"Antes de "+mesExtenso(antigo.desde)+" vale outro período desta conta. Pra mexer antes de "+mesExtenso(mesAntes(antigo.desde))+", edite aquele."};
+  return {acao:"edita",anterior:ant};
+}
+
 export function fixosDoMes(k){
   var d=mesLeitura(k),out=[],pk=parseKey(k);
   (state.config.fixos||[]).forEach(function(f){
-    if(f.desde&&k<f.desde)return;
-    if(d.pulados.indexOf(f.id)>=0)return;
+    if(!fixoAtivo(f,k))return;
+    if(d.pulados.indexOf(f.id)>=0||(f.serie&&d.pulados.indexOf(f.serie)>=0))return;
     var dia=diaDoFixo(f,pk.y,pk.m);
     var nominal=diaDoFixo(Object.assign({},f,{espera:false}),pk.y,pk.m);
     out.push({id:"fix:"+f.id,dia:dia,tipo:f.tipo,valor:f.valor,desc:f.desc,

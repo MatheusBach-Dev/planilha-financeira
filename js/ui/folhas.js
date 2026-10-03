@@ -1,11 +1,11 @@
-import {calcular, inicialDe} from "../core/calculo.js";
+import {calcular, inicialDe, planoFixo, serieDoFixo, textoPeriodoFixo} from "../core/calculo.js";
 import {dadosDia} from "../core/ciclo.js";
 import {COR_NEGATIVO, corPorPercentual} from "../core/cores.js";
-import {HOJE_DIA, HOJE_KEY, diasNoMes, key, parseKey} from "../core/datas.js";
+import {HOJE_DIA, HOJE_KEY, diasNoMes, key, mesAntes, parseKey} from "../core/datas.js";
 import {mesDoc, state, ui} from "../core/estado.js";
 import {$, DOW, MESES, esc, money, num} from "../core/formato.js";
 import {explicaPagamento, mesExtenso, regraPagamento, valorPagamento} from "../core/pagamento.js";
-import {aplicarMascara} from "./perfil.js";
+import {aplicarMascara, lerMoney} from "./perfil.js";
 
 export const fe={diaAberto:null,novoTipo:"diario",novoMes:null,novoEditando:null,
   fixoRegra:"fixo",fixoEditando:null,pagRegra:"util",pagEditando:null};
@@ -222,11 +222,12 @@ export function abrirNovoFixo(id){
   fe.novoTipo=f?f.tipo:"saida";
   fe.fixoRegra=f?(f.regra||"fixo"):"fixo";
   var nVal=f?(f.regra==="fixo"||!f.regra?(+f.dia||10):(+f.n||1)):10;
+  var temPeriodos=f&&(state.config.fixos||[]).some(function(x){return x.id!==f.id&&serieDoFixo(x)===serieDoFixo(f)});
   function op(v,l){return '<option value="'+v+'"'+(fe.fixoRegra===v?" selected":"")+'>'+l+'</option>'}
   abrirSheet(
     '<h3>'+(f?"editar conta fixa":"conta fixa")+'</h3>'+
-    '<p class="sh-sub">'+(f?"Vale de "+(f.desde?MESES[parseKey(f.desde).m]+" de "+parseKey(f.desde).y:"sempre")+" em diante."
-      :"Entra sozinha todo mês, a partir de "+MESES[ui.atual.m]+" de "+ui.atual.y+". É aqui que vão aluguel, luz, internet, assinatura e o quanto você investe.")+'</p>'+
+    '<p class="sh-sub">'+(f?"Vale "+textoPeriodoFixo(f)+"."
+      :"Entra sozinha todo mês, a partir do mês que você escolher. É aqui que vão aluguel, luz, internet, assinatura e o quanto você investe.")+'</p>'+
     '<div class="seg" id="segTipo">'+segb("entrada","entrada")+segb("saida","saída")+segb("economia","investimento")+'</div>'+
     '<p class="sh-sub tipoDesc" id="descTipo"></p>'+
     '<label class="fld"><span>Valor</span><input id="fVal" inputmode="numeric" data-money value="'+num(f?f.valor:0)+'"></label>'+
@@ -241,11 +242,46 @@ export function abrirNovoFixo(id){
     '<label class="chk"><input type="checkbox" id="fEspera"'+(!f||f.espera?" checked":"")+'> nunca antes do salário</label>'+
     '<p class="sh-sub tipoDesc" style="margin-top:-6px">Com isso ligado, se o dia escolhido vier antes do dia em que o salário cai, a conta é jogada pro dia do salário. Desligue nas contas que você paga com a sobra do mês anterior.</p>'+
     '<label class="chk" id="wrapCartaoF"><input type="checkbox" id="fCartao"'+(f&&f.cartao?" checked":"")+'> cai no cartão</label>'+
+    '<label class="fld"><span>A partir do mês</span><input id="fDesde" type="month" value="'+esc(f?f.desde||"":key(ui.atual.y,ui.atual.m))+'"></label>'+
+    (f?'<p class="sh-sub tipoDesc" id="fAvisoDesde" style="margin-top:-6px"></p>':"")+
     '<button class="btn w" id="fSalvar">'+(f?"Salvar alterações":"Salvar conta fixa")+'</button>'+
-    (f?'<button class="linkish" data-delfixo="'+esc(f.id)+'" style="color:var(--neg-deep)">apagar esta conta fixa</button>':"")
+    (f?'<button class="linkish" data-delfixo="'+esc(f.id)+'" style="color:var(--neg-deep)">'+(temPeriodos?"apagar este período":"apagar esta conta fixa")+'</button>':"")
   );
   atualizaSeg();
   atualizaRegraFixo();
+  atualizaAvisoFixo();
+}
+
+export function lerFormFixo(antigo){
+  var n=Math.max(1,+($("fN")||{value:1}).value||1);
+  var cat=$("fCat")?$("fCat").value:"";
+  return {
+    desc:$("fDesc").value.trim()||cat,
+    cat:cat,
+    regra:fe.fixoRegra,
+    dia:fe.fixoRegra==="fixo"?Math.min(31,n):(antigo?antigo.dia:1),
+    n:n,
+    espera:$("fEspera").checked,
+    tipo:fe.novoTipo,valor:lerMoney($("fVal")),
+    cartao:$("fCartao").checked&&fe.novoTipo==="saida",
+    desde:$("fDesde").value||(antigo?antigo.desde:key(ui.atual.y,ui.atual.m))
+  };
+}
+
+export function atualizaAvisoFixo(){
+  var av=$("fAvisoDesde");
+  if(!av)return;
+  var lista=state.config.fixos||[];
+  var antigo=lista.filter(function(x){return x.id===fe.fixoEditando})[0];
+  if(!antigo)return;
+  var novo=lerFormFixo(antigo),p=planoFixo(antigo,novo,lista);
+  if(p.erro)av.textContent=p.erro;
+  else if(p.acao==="divide")
+    av.textContent="A mudança vale de "+mesExtenso(novo.desde)+" em diante. Até "+mesExtenso(mesAntes(novo.desde))+" fica como estava.";
+  else if(novo.desde!==antigo.desde)
+    av.textContent="A conta passa a valer a partir de "+mesExtenso(novo.desde)+
+      (p.anterior?", e o período anterior vai até "+mesExtenso(mesAntes(novo.desde)):"")+".";
+  else av.textContent="Vai investir ou pagar outro valor a partir de um mês? Troque o valor e escolha aqui o mês da mudança. Os meses antes dele continuam como estão.";
 }
 
 export function atualizaRegraFixo(){

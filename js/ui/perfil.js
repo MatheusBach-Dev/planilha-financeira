@@ -1,4 +1,4 @@
-import { diaDoFixo, textoRegraFixo } from "../core/calculo.js";
+import { diaDoFixo, textoPeriodoFixo, textoRegraFixo } from "../core/calculo.js";
 import { HOJE_KEY, somaMes } from "../core/datas.js";
 import { state, ui } from "../core/estado.js";
 import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
@@ -16,7 +16,10 @@ export function atualizaSaveBar() {
 export function renderSet() {
   var c = state.config, v = $("viewSet");
   var pags = (c.pagamentos || []).slice().sort(function (a, b) { return (a.desde || "") < (b.desde || "") ? -1 : 1 });
-  var fixos = (c.fixos || []).slice().sort(function (a, b) { return diaDoFixo(a, ui.atual.y, ui.atual.m) - diaDoFixo(b, ui.atual.y, ui.atual.m) });
+  var fixos = (c.fixos || []).slice().sort(function (a, b) {
+    return diaDoFixo(a, ui.atual.y, ui.atual.m) - diaDoFixo(b, ui.atual.y, ui.atual.m) ||
+      ((a.desde || "") < (b.desde || "") ? -1 : (a.desde || "") > (b.desde || "") ? 1 : 0);
+  });
   v.innerHTML =
     (sessao.user ? '<div class="conta"><div class="d">' + esc(sessao.user.displayName || sessao.user.email || "conta") +
       '<small>' + esc(sessao.user.email || "") + '</small></div><button class="rm" id="btnSair">sair</button></div>' +
@@ -43,10 +46,11 @@ export function renderSet() {
     '<button class="btn ghost w" id="addPag" style="margin-top:14px">' + (pags.length ? "Meu salário mudou a partir de um mês" : "Cadastrar recebimento") + '</button>' +
     previaPagamento() +
     '<hr class="sep"><h2>contas fixas</h2>' +
-    '<p class="hint">Entram sozinhas todo mês, a partir do mês em que você cadastrou. Toque numa delas pra editar. Pra pular uma só num mês, abra o dia e remova ali.</p>' +
+    '<p class="hint">Entram sozinhas todo mês, a partir do mês que você escolher. Toque numa delas pra editar: se trocar o valor e escolher um mês mais pra frente, a mudança vale só dali em diante. Pra pular uma só num mês, abra o dia e remova ali.</p>' +
     (fixos.length ? fixos.map(function (f) {
+      var periodo = f.ate || f.serie || (f.desde && f.desde > HOJE_KEY) ? textoPeriodoFixo(f) + ' · ' : '';
       return '<div class="fixo" data-editfixo="' + esc(f.id) + '"><div class="d">' + esc(f.desc || "sem nome") +
-        '<small>' + (f.cat ? esc(f.cat) + ' · ' : '') + textoRegraFixo(f) + ' · ' + rotuloTipo(f.tipo) + (f.espera ? " · nunca antes do salário" : "") + (f.cartao ? " · no cartão" : "") + '</small></div><b>' + money(f.valor) + '</b>' +
+        '<small>' + periodo + (f.cat ? esc(f.cat) + ' · ' : '') + textoRegraFixo(f) + ' · ' + rotuloTipo(f.tipo) + (f.espera ? " · nunca antes do salário" : "") + (f.cartao ? " · no cartão" : "") + '</small></div><b>' + money(f.valor) + '</b>' +
         '<button class="rm" data-delfixo="' + esc(f.id) + '">remover</button></div>';
     }).join("") : '<p class="empty">Nenhuma conta fixa ainda.</p>') +
     '<button class="btn ghost w" id="addFixo" style="margin-top:14px">Adicionar conta fixa</button>' +

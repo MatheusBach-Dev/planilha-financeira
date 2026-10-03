@@ -2,8 +2,8 @@ import {state, ui} from "../core/estado.js";
 import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
-import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
+import {aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
+import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {render} from "./render.js";
 import {aplicarTema} from "./tema.js";
@@ -24,7 +24,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest("#nextM"))return mover(1);
   
     var tp=e.target.closest("[data-tipo]");
-    if(tp){fe.novoTipo=tp.dataset.tipo;return atualizaSeg()}
+    if(tp){fe.novoTipo=tp.dataset.tipo;atualizaSeg();return atualizaAvisoFixo()}
   
     var tick=e.target.closest(".tick");
     if(tick){
@@ -49,11 +49,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(del)return remover(del.dataset.del,del.dataset.mes);
   
     var df=e.target.closest("[data-delfixo]");
-    if(df){
-      if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
-      state.config.fixos=(state.config.fixos||[]).filter(function(f){return f.id!==df.dataset.delfixo});
-      fe.fixoEditando=null;salvarConfig();fecharSheet();render();return toast("Conta fixa removida.");
-    }
+    if(df)return removerFixo(df.dataset.delfixo);
     var dp=e.target.closest("[data-delpag]");
     if(dp){
       if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
@@ -95,6 +91,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest&&e.target.closest("#viewSet [data-set]")){
       ui.cfgSujo=true;atualizaSaveBar();
     }
+    if(e.target.closest&&e.target.closest("#sheet"))atualizaAvisoFixo();
   });
   document.addEventListener("change",function(e){
     var s=e.target.closest("[data-set]");
@@ -107,8 +104,9 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
       salvarConfig();render();
       return;
     }
-    if(e.target.id==="fRegra")return atualizaRegraFixo();
+    if(e.target.id==="fRegra")atualizaRegraFixo();
     if(e.target.id==="pRegra")return atualizaRegraPag();
+    if(e.target.closest&&e.target.closest("#sheet"))return atualizaAvisoFixo();
     if(e.target.id==="colSel"){
       document.querySelectorAll("#painels table").forEach(function(t){t.dataset.col=e.target.value});
     }

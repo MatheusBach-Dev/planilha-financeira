@@ -1,5 +1,5 @@
 import {planoCiclo} from "../core/aperto.js";
-import {calcular, inicialDe, limparCache} from "../core/calculo.js";
+import {calcular, fixoAtivo, inicialDe, limparCache} from "../core/calculo.js";
 import {infoCiclo, montarDiarias} from "../core/ciclo.js";
 import {HOJE_KEY, fmtDia, fmtDiaSem, key, maisDias, somaMes} from "../core/datas.js";
 import {state, ui} from "../core/estado.js";
@@ -79,10 +79,10 @@ export function render(){
 }
 
 export function fixoDuplicado(){
-  var v=valorPagamento(ui.atual.y,ui.atual.m),achado=null;
+  var v=valorPagamento(ui.atual.y,ui.atual.m),k=key(ui.atual.y,ui.atual.m),achado=null;
   if(!v)return null;
   (state.config.fixos||[]).forEach(function(f){
-    if(f.tipo==="entrada"&&Math.abs((+f.valor||0)-v)<0.01)achado=f;
+    if(f.tipo==="entrada"&&fixoAtivo(f,k)&&Math.abs((+f.valor||0)-v)<0.01)achado=f;
   });
   return achado;
 }

@@ -92,6 +92,8 @@ export function maisDias(dt,n){return new Date(dt.getFullYear(),dt.getMonth(),dt
 
 export function difDias(a,b){return Math.round((b-a)/86400000)}
 
+export function mesAntes(k){var p=somaMes(parseKey(k),-1);return key(p.y,p.m)}
+
 export function somaMes(base,n){
   var m=base.m+n,y=base.y;
   while(m<0){m+=12;y--}
