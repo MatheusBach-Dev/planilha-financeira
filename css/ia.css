@@ -1,0 +1,55 @@
+/* ————— assistente ————— */
+.top-dir{display:flex;align-items:center;gap:8px;flex:none}
+.ia-btn{
+  display:flex;align-items:center;gap:5px;flex:none;
+  border:1px solid rgba(244,239,227,.3);border-radius:99px;
+  padding:5px 11px 5px 8px;font-size:12.5px;white-space:nowrap;
+}
+.ia-btn:hover{border-color:rgba(244,239,227,.65)}
+.ia-btn[hidden]{display:none}
+.ia-btn svg{width:17px;height:17px;flex:none}
+
+.ia-msgs{
+  display:flex;flex-direction:column;gap:8px;
+  max-height:min(50vh,440px);max-height:min(50dvh,440px);overflow-y:auto;overscroll-behavior:contain;
+  margin-bottom:12px;
+}
+.ia-msgs[hidden]{display:none}
+.ia-msg{
+  align-self:flex-start;max-width:86%;padding:9px 12px;border-radius:14px 14px 14px 4px;
+  background:var(--surface);border:1px solid var(--line-soft);
+  font-size:13.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.ia-msg.eu{
+  align-self:flex-end;border-radius:14px 14px 4px 14px;
+  background:var(--btn-bg);color:var(--btn-fg);border-color:transparent;
+}
+.ia-msg.erro{background:var(--neg-pale);border-color:transparent}
+.ia-msg.pensando{display:flex;gap:5px;padding:13px 14px}
+.ia-msg.pensando i{width:6px;height:6px;border-radius:50%;background:var(--text-dim);animation:iaPulso 1s ease-in-out infinite}
+.ia-msg.pensando i:nth-child(2){animation-delay:.15s}
+.ia-msg.pensando i:nth-child(3){animation-delay:.3s}
+@keyframes iaPulso{0%,100%{opacity:.25}50%{opacity:1}}
+
+.ia-acao{
+  padding:10px 12px;border-radius:var(--r);background:var(--sea-soft);
+  font-size:13px;line-height:1.5;overflow-wrap:anywhere;
+}
+.ia-acao small{display:block;font-size:11px;font-weight:500;color:var(--sea);margin-bottom:2px}
+.ia-acao.feito small{color:var(--pos-deep)}
+.ia-acao.erro{background:var(--neg-pale)}
+.ia-acao.erro small{color:var(--neg-deep)}
+.ia-acao.cancelado,.ia-acao.desfeito{background:var(--surface);color:var(--text-dim)}
+.ia-acao.cancelado small,.ia-acao.desfeito small{color:var(--text-dim)}
+.ia-acao .linkish{text-align:left;margin-top:6px}
+.ia-bts{display:flex;gap:8px;margin-top:10px}
+.ia-bts .btn{flex:1;padding:9px 12px;font-size:13px}
+
+.ia-campo{display:flex;gap:8px}
+.ia-campo input{
+  flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:var(--r);padding:11px 12px;font-size:16px;
+}
+.ia-campo input:focus{border-color:var(--sea);outline:none}
+.ia-campo .btn{flex:none}
+.ia-campo .btn:disabled{opacity:.5;cursor:default}
