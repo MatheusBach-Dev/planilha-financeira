@@ -5,12 +5,38 @@ import {HOJE_DIA, HOJE_KEY, key, parseKey, somaMes} from "../core/datas.js";
 import {ui} from "../core/estado.js";
 import {$, DOW, MESES, money, num} from "../core/formato.js";
 import {regraPagamento, valorPagamento} from "../core/pagamento.js";
-import {ehLargo} from "./render.js";
+import {ehLargo, mesesNaTela, vista} from "./render.js";
+
+var observador=null;
+
+// "mostrar tudo" (entrada, saída e diário juntos, como na planilha) só existe no computador
+function opcaoTudo(){
+  var sel=$("colSel"),quer=ehLargo(),op=sel.querySelector('option[value="tudo"]');
+  if(quer&&!op){sel.insertBefore(new Option("mostrar tudo","tudo"),sel.firstChild);sel.value="tudo"}
+  else if(!quer&&op){var era=sel.value==="tudo";op.remove();if(era)sel.value="diario"}
+}
+
+// as cinco colunas precisam de uns 300px por mês; abaixo disso o "mostrar tudo" mostra só o diário
+export function aplicarColuna(){
+  var cont=$("painels"),pref=$("colSel").value,w=cont.clientWidth/(cont.children.length||1);
+  var col=pref==="tudo"&&w<300?"diario":pref;
+  cont.querySelectorAll("table").forEach(function(t){t.dataset.col=col});
+}
+
+// painel estreito (4 ou 5 meses) encolhe o selo do salário pra uma bolinha
+export function medirPaineis(){
+  var cont=$("painels"),n=cont.children.length||1,w=cont.clientWidth/n;
+  cont.classList.toggle("estreito",n>1&&w<250);
+  aplicarColuna();
+}
 
 export function renderPaineis(){
-  var n=ehLargo()?3:1;
+  var n=mesesNaTela();
   var cont=$("painels");
+  $("qtdSel").value=String(vista.meses);
+  opcaoTudo();
   cont.classList.toggle("trio",n>1);
+  cont.style.setProperty("--n",n);
   while(cont.children.length>n)cont.removeChild(cont.lastChild);
   while(cont.children.length<n){
     var p=document.createElement("div");
@@ -22,16 +48,16 @@ export function renderPaineis(){
       '<th class="c-saida" title="contas que saíram e dinheiro que você guardou — encolhem o bolo do ciclo">saída</th><th class="c-diario" title="o que você gastou no dia; em tom apagado, quanto você ainda pode gastar naquele dia">diário</th><th>saldo</th></tr></thead><tbody></tbody></table>';
     cont.appendChild(p);
   }
-  var col=$("colSel").value;
   for(var i=0;i<n;i++){
     var alvo=somaMes(ui.atual,i),k=key(alvo.y,alvo.m);
     var painel=cont.children[i];
     painel.dataset.mes=k;
-    painel.querySelector("table").dataset.col=col;
     painel.querySelector(".painel-mes").textContent=MESES[alvo.m];
     painel.querySelector(".painel-info").dataset.checkinmes=k;
     renderLedger(painel,k,calcular(k,inicialDe(k)));
   }
+  medirPaineis();
+  if(!observador&&window.ResizeObserver){observador=new ResizeObserver(medirPaineis);observador.observe(cont)}
 }
 
 export function renderLedger(painel,k,r){
@@ -42,6 +68,7 @@ export function renderLedger(painel,k,r){
   var anEl=painel.querySelector(".painel-anot");
   if(anEl){
     anEl.textContent=r.total.marcados+" de "+r.dias+" anotados";
+    anEl.parentElement.title=anEl.textContent;
     anEl.classList.toggle("completo",r.total.marcados>=r.dias);
   }
 

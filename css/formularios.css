@@ -10,8 +10,6 @@
 .fld select{background-image:none}
 .fld input:focus,.fld select:focus{border-color:var(--sea);outline:none}
 .savebar{margin:4px 0 2px}
-.savebar .btn{transition:background-color .2s ease,color .2s ease,border-color .2s ease}
-.savebar .btn.ok{background:none;color:var(--pos-deep);border:1px solid var(--pos-deep)}
 .row2{display:flex;gap:10px}.row2>*{flex:1;min-width:0}
 hr.sep{border:0;border-top:1px solid var(--line);margin:24px 0 18px}
 .fixo{cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
@@ -41,3 +39,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:24px 0 18px}
 .btn.w{display:block;width:100%}
 .btn.ghost{background:none;color:var(--text);border:1px solid var(--line)}
 .btn.danger{background:none;color:var(--neg-deep);border:1px solid var(--neg-deep)}
+/* botão que responde: sobe um pouco com o mouse em cima e afunda no clique */
+.btn{transition:transform .12s ease,box-shadow .15s ease,background-color .15s ease,border-color .15s ease,opacity .15s ease}
+.btn:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.btn:not(:disabled):active{transform:translateY(1px) scale(.98);box-shadow:none;transition-duration:.05s}
+.btn.ghost:not(:disabled):hover{background:var(--surface);border-color:var(--text-dim);box-shadow:none}
+.btn.danger:not(:disabled):hover{background:var(--neg-pale);box-shadow:none}

@@ -8,8 +8,8 @@ import {acharLancamento, adicionarLancamento, editarLancamento, removerLancament
 import {iaDisponivel, perguntarIA} from "../dados/ia.js";
 import {salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {CATS, abrirSheet} from "./folhas.js";
-import {render} from "./render.js";
+import {CATS, abrirSheet, fecharSheet, sheet} from "./folhas.js";
+import {ehLargo, render, trocarLateral, vista} from "./render.js";
 import {toast} from "./toast.js";
 
 // O plano grátis do Groq tem cota diária pequena, então cada mensagem custa um pedido só:
@@ -25,18 +25,49 @@ var HISTORICO=8;
 
 var conversa={uid:null,itens:[],enviando:false};
 
-export function abrirIA(){
-  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+var DICA="Escreva do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. "+
+  "Ela só mexe nos lançamentos. Salário e contas fixas continuam no perfil.";
+
+var CAMPO='<div class="ia-campo">'+
+  '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="Escreva aqui…" aria-label="Mensagem para a assistente">'+
+  '<button class="btn" id="iaEnviar">Enviar</button>'+
+'</div>';
+
+// No computador a conversa fica sempre aberta no painel da direita; no resto, abre na folha.
+export function lateralAtiva(){return ehLargo()&&!vista.semLateral}
+
+function conversaDoUsuario(){
   if(conversa.uid!==sessao.usuarioId)conversa={uid:sessao.usuarioId,itens:[],enviando:false};
+}
+
+export function montarLateral(){
+  var box=$("iaLateral");
+  if(!box)return;
+  if(!lateralAtiva()){if(box.firstChild)box.innerHTML="";return}
+  conversaDoUsuario();
+  if(!box.firstChild){
+    var naFolha=$("iaMsgs");
+    if(naFolha&&sheet.contains(naFolha))fecharSheet();
+    box.innerHTML='<div class="ia-topo"><b>assistente</b><button class="linkish" id="iaLimpar">nova conversa</button></div>'+
+      '<div class="ia-msgs" id="iaMsgs" data-lateral="1" aria-live="polite"></div>'+CAMPO;
+  }
+  renderConversa();
+}
+
+export function abrirIA(){
+  if(ehLargo()){
+    if(vista.semLateral)trocarLateral();
+    var t=$("iaTexto");if(t)t.focus();
+    return;
+  }
+  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+  conversaDoUsuario();
+  var lat=$("iaLateral");
+  if(lat)lat.innerHTML="";
   abrirSheet(
     '<h3>assistente</h3>'+
-    '<p class="sh-sub">Escreva do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. '+
-    'Ela só mexe nos lançamentos. Salário e contas fixas continuam no perfil.</p>'+
-    '<div class="ia-msgs" id="iaMsgs" aria-live="polite"></div>'+
-    '<div class="ia-campo">'+
-      '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="Escreva aqui…" aria-label="Mensagem para a assistente">'+
-      '<button class="btn" id="iaEnviar">Enviar</button>'+
-    '</div>'+
+    '<p class="sh-sub">'+DICA+'</p>'+
+    '<div class="ia-msgs" id="iaMsgs" aria-live="polite"></div>'+CAMPO+
     '<button class="linkish" id="iaLimpar">começar outra conversa</button>'
   );
   renderConversa();
@@ -320,11 +351,15 @@ function renderConversa(){
     return cartaoAcao(it,i);
   }).join("");
   if(conversa.enviando)h+='<div class="ia-msg pensando" role="status" aria-label="pensando"><i></i><i></i><i></i></div>';
+  var lateral=!!box.dataset.lateral,pode=iaDisponivel();
+  if(lateral&&!h)h='<p class="ia-dica">'+esc(pode?DICA:"Entre com sua conta Google pra conversar com a assistente.")+'</p>';
   box.innerHTML=h;
   box.hidden=!h;
   box.scrollTop=box.scrollHeight;
   var b=$("iaEnviar");
-  if(b)b.disabled=conversa.enviando;
+  if(b)b.disabled=conversa.enviando||(lateral&&!pode);
+  var t=$("iaTexto");
+  if(t&&lateral)t.disabled=!pode;
 }
 
 function cartaoAcao(it,i){

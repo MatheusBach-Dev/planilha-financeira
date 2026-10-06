@@ -9,7 +9,7 @@ import {mesExtenso} from "../core/pagamento.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {abrirDia, fe, fecharSheet, lerFormFixo} from "./folhas.js";
-import {atualizaSaveBar, lerMoney} from "./perfil.js";
+import {lerMoney} from "./perfil.js";
 import {render} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
@@ -60,14 +60,7 @@ export function salvarConfigManual(){
   ui.cfgSujo=false;
   salvarConfig();
   render();
-  var b=$("btnSalvarCfg");
-  if(b){
-    b.classList.add("ok");
-    b.firstChild.textContent="Salvo ✓";
-    clearTimeout(ui.salvoT);
-    ui.salvoT=setTimeout(atualizaSaveBar,1800);
-  }
-  toast("Configurações salvas.");
+  toast("Alterações salvas");
 }
 
 export function salvarPagamento(){
@@ -177,6 +170,7 @@ export function setTab(name){
   $("viewSaldos").hidden=name!=="saldos";
   $("viewMes").hidden=name!=="mes";
   $("viewSet").hidden=name!=="set";
+  $("viewInvestir").hidden=name!=="investir";
   document.querySelectorAll("[data-tab]").forEach(function(b){
     b.setAttribute("aria-current",b.dataset.tab===name?"true":"false");
   });

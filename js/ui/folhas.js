@@ -15,8 +15,9 @@ export var scrim=$("scrim"),sheet=$("sheet"),sheetMascara=false;
 export function abrirSheet(html){
   sheetMascara=true;
   sheet.innerHTML='<div class="sheet-top"><span class="grab"></span>'+
-    '<button class="min" id="minSheet" aria-label="Minimizar">'+
+    '<button class="min" id="minSheet" aria-label="Fechar">'+
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+    '<svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>'+
     '</button></div>'+html;
   scrim.classList.add("open");
   document.body.style.overflow="hidden";
