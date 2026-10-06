@@ -8,7 +8,7 @@ export var LKEY="bach.saldos.v1";
 
 export function chaveLocal(){return sessao.usuarioId?(LKEY+":"+sessao.usuarioId):LKEY}
 
-export var padraoConfig={nome:"matheus bach",saldoInicial:0,saldoInicialMes:HOJE_KEY,renda:0,metaEconomia:20,metaReserva:10,tema:"dark",fixos:[],pagamentos:[]};
+export var padraoConfig={nome:"matheus bach",saldoInicial:0,saldoInicialMes:HOJE_KEY,renda:0,metaEconomia:20,metaReserva:10,tema:"dark",fixos:[],pagamentos:[],investimentos:[],reservaMeses:6};
 
 export var state={config:Object.assign({},padraoConfig),meses:{}};
 
@@ -16,6 +16,7 @@ export function normalizarConfig(c){
   c=c||{};
   var out=Object.assign({},padraoConfig,c);
   if(!Array.isArray(out.fixos))out.fixos=[];
+  out.investimentos=Array.isArray(c.investimentos)?c.investimentos.slice():[];
   var lista=Array.isArray(c.pagamentos)?c.pagamentos.slice():[];
   var v=c.pagamento;
   if(!lista.length&&v&&+v.valor>0){
