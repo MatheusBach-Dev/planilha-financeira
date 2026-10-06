@@ -201,12 +201,17 @@ function mensagemErro(e){
   var c=e&&e.codigo;
   if(c==="limite")return "A IA chegou no limite grátis por agora. Tente de novo em "+tempo(e.espera)+
     ". O botão + adicionar continua funcionando.";
-  if(c==="sem_chave"||c==="chave_invalida")return "A assistente ainda não está configurada: falta a chave do Groq na Vercel.";
+  if(c==="sem_chave")return "A assistente ainda não está configurada: falta a chave GROQ_API_KEY na Vercel.";
+  if(c==="chave_invalida")return "O Groq não aceitou a chave GROQ_API_KEY que está na Vercel. Confira se ela foi copiada inteira ou crie outra.";
   if(c==="login")return "Sua sessão expirou. Saia e entre de novo.";
-  if(c==="sem_acesso")return "Sua conta não está liberada pra usar a assistente.";
+  if(c==="sem_acesso")return "Sua conta não está liberada pra usar a assistente (veja IA_EMAILS na Vercel).";
   if(c==="nao_entendi")return "Não entendi direito. Pode dizer de outro jeito?";
   if(c==="grande")return "A conversa ficou grande demais pro plano grátis. Toque em “começar outra conversa” e tente de novo.";
-  return "Não consegui falar com a IA agora. Tente de novo daqui a pouco.";
+  if(c==="sem_servidor")return "O servidor da IA não existe neste endereço ("+e.detalhe+"). Ela só funciona no site publicado na Vercel, não em prévia local.";
+  if(c==="recusado")return "O Groq recusou o pedido com o modelo "+e.modelo+" ("+e.detalhe+"). Se você trocou o GROQ_MODEL na Vercel, apague essa variável ou volte para openai/gpt-oss-120b e faça um novo deploy.";
+  if(c==="rede")return "Sem conexão com a internet agora. Tente de novo daqui a pouco.";
+  return "Não consegui falar com a IA agora"+(c||e&&e.detalhe?" (erro: "+[c,e.detalhe].filter(Boolean).join(" · ")+")":"")+
+    ". Tente de novo daqui a pouco.";
 }
 
 function tempo(s){

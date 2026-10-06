@@ -186,12 +186,17 @@ module.exports = async function (req, res) {
     return res.status(429).json({erro: "limite", espera: Math.ceil(+r.headers.get("retry-after") || 60)});
   }
   if (!r.ok) {
-    const codigo = (dados && dados.error && dados.error.code) || "";
+    const e = (dados && dados.error) || {};
+    const codigo = String(e.code || e.type || "").slice(0, 60);
     // só o status e o código: a mensagem de erro pode trazer o texto do usuário
-    console.error("[ia] Groq respondeu", r.status, codigo);
+    console.error("[ia] Groq respondeu", r.status, codigo, "modelo", MODELO);
     if (codigo === "tool_use_failed") return res.status(422).json({erro: "nao_entendi"});
     if (r.status === 401) return res.status(503).json({erro: "chave_invalida"});
-    return res.status(502).json({erro: "ia_fora"});
+    // 400/404: o Groq não aceitou o pedido com esse modelo (nome errado, sem ferramentas, contexto curto…)
+    if (r.status === 400 || r.status === 404) {
+      return res.status(502).json({erro: "recusado", modelo: MODELO, detalhe: codigo || "http " + r.status});
+    }
+    return res.status(502).json({erro: "ia_fora", detalhe: codigo || "http " + r.status});
   }
 
   const msg = (dados.choices && dados.choices[0] && dados.choices[0].message) || {};
