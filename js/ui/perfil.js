@@ -5,7 +5,7 @@ import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
 import { diaPagamento, mesExtenso, temPagamento, textoRegraPag } from "../core/pagamento.js";
 import { sessao } from "../dados/sessao.js";
 import { rotuloTipo } from "./folhas.js";
-import { carregarInvestir, modInvest } from "./investir.js";
+import { carregarInvestir, investirLiberado, modInvest } from "./investir.js";
 
 export function atualizaSaveBar() {
   var b = $("btnSalvarCfg");
@@ -15,8 +15,8 @@ export function atualizaSaveBar() {
 
 export function renderSet() {
   var c = state.config, v = $("viewSet");
-  var mi = modInvest();
-  if (!mi) carregarInvestir();
+  var mi = investirLiberado() ? modInvest() : null;
+  if (investirLiberado() && !mi) carregarInvestir();
   var niv = mi && mi.nivelInvestidor ? mi.nivelInvestidor() : null;
   var pags = (c.pagamentos || []).slice().sort(function (a, b) { return (a.desde || "") < (b.desde || "") ? -1 : 1 });
   var fixos = (c.fixos || []).slice().sort(function (a, b) {

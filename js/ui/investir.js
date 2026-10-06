@@ -12,7 +12,34 @@ import {toast} from "./toast.js";
 // (a branch do cálculo não entrou), a aba mostra "em breve" e o resto do site segue funcionando.
 var inv=null,invDados=null,taxasDados=null,carregando=null,falhou=false;
 
+// A aba ainda está sendo lapidada: completa só rodando no computador (localhost);
+// no site publicado ela aparece no menu, mas mostra "em breve".
+export function investirLiberado(){
+  var h=location.hostname;
+  return h==="localhost"||h==="127.0.0.1"||h==="[::1]"||/\.localhost$/.test(h);
+}
+
 export function modInvest(){return inv}
+
+function telaEmBreve(){
+  function item(icone,titulo,texto){
+    return '<li><span class="eb-ico" aria-hidden="true">'+icone+'</span><div><b>'+titulo+'</b><small>'+texto+'</small></div></li>';
+  }
+  return '<div class="blocos"><section class="bloco em-breve">'+
+    '<span class="eb-selo">em breve</span>'+
+    '<h2>investir</h2>'+
+    '<p class="eb-tit">Seção em construção</p>'+
+    '<p class="eb-txt">Estamos preparando um lugar pra te ajudar a investir com calma: quanto faz sentido guardar pra sua renda, '+
+    'um caminho passo a passo e um simulador pra ver onde o seu dinheiro chega. Novidades em breve.</p>'+
+    '<ul class="eb-lista">'+
+      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18h16M7 18V12M12 18V8M17 18V5"/></svg>',
+        "Seu nível","quanto guardar, de acordo com o que você ganha")+
+      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/><path d="M7.2 12h2.6M14.2 12h2.6"/></svg>',
+        "Seu caminho","da reserva de emergência aos primeiros investimentos")+
+      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5.5-5.5 4 4L20 10"/><path d="M15 10h5v5"/></svg>',
+        "Simulador","quanto o seu dinheiro rende, comparado com a poupança")+
+    '</ul></section></div>';
+}
 
 export function carregarInvestir(){
   if(!carregando)carregando=Promise.all([import("../core/investimentos.js"),import("../dados/investimentos.js"),import("../dados/taxas.js")])
@@ -60,6 +87,7 @@ function dataBR(iso){var p=String(iso||"").split("-");return p.length===3?p[2]+"
 
 export function renderInvestir(){
   var v=$("viewInvestir");
+  if(!investirLiberado()){v.innerHTML=telaEmBreve();return}
   if(!inv){
     if(!falhou)carregarInvestir();
     v.innerHTML='<div class="blocos"><section class="bloco"><h2>investir</h2><p class="hint">'+
