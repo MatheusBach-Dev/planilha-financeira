@@ -2,7 +2,7 @@
 .painels{display:block}
 .painels.trio{
   --head-h:54px;
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));
   gap:0;border-top:1px solid var(--line);
 }
 .painels.trio .painel + .painel{border-left:1px solid var(--line)}
@@ -87,11 +87,8 @@ tr.pagrow .dow{display:none}
 tr.pendente .c-dia>span{color:var(--text-dim)}
 
 /* ————— três meses no desktop ————— */
-.largo .app{max-width:1280px}
-.largo .tabbar{max-width:1280px}
-.largo #heroSingle{display:none}
 .largo .checkin{display:none}
-.largo .hero{padding-bottom:14px}
+.qtdsel{display:none}
 .largo .ledger{font-size:12.5px}
 .largo .ledger th{font-size:10px;padding:8px 7px}
 .largo .ledger td>span{padding:7px 7px}

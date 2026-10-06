@@ -53,3 +53,10 @@
 .ia-campo input:focus{border-color:var(--sea);outline:none}
 .ia-campo .btn{flex:none}
 .ia-campo .btn:disabled{opacity:.5;cursor:default}
+
+/* ————— painel da direita no computador (o layout fica em computador.css) ————— */
+.ia-lateral,.lateral-fechar,.lateral-btn,.conta-lateral{display:none}
+.ia-topo{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ia-topo b{font-family:var(--display);font-weight:500;font-size:15px}
+.ia-topo .linkish{width:auto;margin:0}
+.ia-dica{margin:0;color:var(--text-dim);font-size:12.5px;line-height:1.5}
