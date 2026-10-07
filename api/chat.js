@@ -29,7 +29,8 @@ Tipos de lançamento:
 - economia: dinheiro guardado ou investido.
 
 Regras:
-- Sem data dita, use hoje. "Ontem" é o dia anterior; se cair no mês anterior, use esse mês.
+- Sem data dita, use hoje. Para "ontem", "anteontem" ou um dia da semana, use o mês e o dia da linha "dias recentes".
+- Se a pessoa citar vários lançamentos na mesma mensagem, mande todos numa chamada só de adicionar_lancamentos, cada um com o seu mês e dia. Nunca lance só o primeiro.
 - Para editar ou apagar, use o número #ref da lista. Se mais de um lançamento combinar com o pedido, pergunte qual antes de agir.
 - Se faltar o valor, pergunte em vez de chutar.
 - A categoria tem que ser uma da lista do tipo. Se nenhuma servir, deixe vazia.
@@ -47,9 +48,15 @@ const CAMPOS = {
   cartao: {type: "boolean", description: "true se foi pago no cartão de crédito."}
 };
 
+// O gpt-oss do Groq só chama uma ferramenta por resposta (não faz chamadas em paralelo),
+// então lançar recebe uma lista: "gastei 6 ontem e 15 anteontem" vem numa chamada só.
+const LANCAMENTO = {type: "object", properties: Object.assign({mes: MES}, CAMPOS),
+                    required: ["mes", "dia", "tipo", "valor", "descricao"]};
+
 const FERRAMENTAS = [
-  ferramenta("adicionar_lancamento", "Lança um gasto, entrada ou investimento num dia.",
-    Object.assign({mes: MES}, CAMPOS), ["mes", "dia", "tipo", "valor", "descricao"]),
+  ferramenta("adicionar_lancamentos",
+    "Lança um ou mais gastos, entradas ou investimentos. Se a pessoa citar vários, mande todos aqui, cada um com o seu mês e dia.",
+    {lancamentos: {type: "array", minItems: 1, items: LANCAMENTO}}, ["lancamentos"]),
   ferramenta("editar_lancamento", "Muda um lançamento que já existe. Mande só os campos que mudam.",
     Object.assign({ref: REF}, CAMPOS), ["ref"]),
   ferramenta("apagar_lancamento", "Apaga um lançamento que já existe.", {ref: REF}, ["ref"]),
@@ -72,11 +79,21 @@ function limparMensagens(lista) {
   return out;
 }
 
+// A lista de adicionar_lancamentos vira uma ação "adicionar_lancamento" por item,
+// que é o que o app no navegador sabe executar.
 function lerAcoes(chamadas) {
-  return (chamadas || []).map(function (c) {
-    try { return {nome: c.function.name, args: JSON.parse(c.function.arguments || "{}") || {}}; }
-    catch (e) { return null; }
-  }).filter(function (a) { return a && NOMES.indexOf(a.nome) >= 0; });
+  const acoes = [];
+  (chamadas || []).forEach(function (c) {
+    let a;
+    try { a = {nome: c.function.name, args: JSON.parse(c.function.arguments || "{}") || {}}; }
+    catch (e) { return; }
+    if (a.nome === "adicionar_lancamentos") {
+      (Array.isArray(a.args.lancamentos) ? a.args.lancamentos : []).forEach(function (l) {
+        if (l && typeof l === "object" && !Array.isArray(l)) acoes.push({nome: "adicionar_lancamento", args: l});
+      });
+    } else if (NOMES.indexOf(a.nome) >= 0) acoes.push(a);
+  });
+  return acoes;
 }
 
 module.exports = async function (req, res) {
@@ -93,7 +110,8 @@ module.exports = async function (req, res) {
     tools: FERRAMENTAS,
     tool_choice: "auto",
     temperature: 0.2,
-    max_completion_tokens: 800
+    // cada lançamento da lista gasta uns 50 tokens; 1500 dá pra anotar uma semana de uma vez
+    max_completion_tokens: 1500
   };
   // gpt-oss pensa antes de responder; "low" gasta menos da cota diária
   if (/gpt-oss/.test(MODELO)) pedido.reasoning_effort = "low";
