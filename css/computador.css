@@ -106,7 +106,8 @@
 }
 .largo .ia-lateral .ia-msgs{flex:1 1 auto;max-height:none;min-height:0;margin-bottom:10px}
 .largo .ia-lateral .ia-msg{max-width:92%;font-size:13px}
-.largo .ia-lateral .ia-campo input{font-size:14px;padding:9px 11px;background:var(--bg)}
+.largo .ia-lateral .ia-entrada{background:var(--bg)}
+.largo .ia-lateral .ia-campo input{font-size:14px;padding:9px 11px}
 .largo .ia-lateral .ia-campo input:disabled{opacity:.55}
 .largo .ia-lateral .ia-campo .btn{padding:9px 14px;font-size:13px}
 /* conta Google no pé do painel, como a conta do GitHub no VS Code; clicar abre o perfil */
