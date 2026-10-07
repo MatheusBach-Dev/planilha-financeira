@@ -283,6 +283,8 @@ function mensagemErroVoz(e){
   var c=e&&e.codigo;
   if(c==="sem_fala")return "Não ouvi nada nesse áudio. Tente de novo, falando mais perto do microfone.";
   if(c==="audio_grande")return "O áudio ficou grande demais. Tente uma mensagem mais curta.";
+  if(c==="audio_invalido")return "Não consegui ler esse áudio ("+(e.detalhe||"arquivo")+"). Tente gravar de novo.";
+  if(c==="recusado")return "O Groq recusou a transcrição com o modelo "+e.modelo+" ("+e.detalhe+"). Se você trocou o GROQ_MODEL_VOZ na Vercel, apague essa variável e faça um novo deploy.";
   if(c==="voz_desligada")return "Gravei, mas a transcrição por voz ainda não foi ligada no servidor. Por enquanto, escreva a mensagem.";
   return mensagemErro(e);
 }

@@ -16,3 +16,9 @@ Usa o plano grátis do [Groq](https://console.groq.com). Cada mensagem gasta um 
 A chave fica só no servidor (`api/chat.js`). Ela **não** vai no Firebase nem no código.
 
 Opcional: `GROQ_MODEL` troca o modelo (padrão `openai/gpt-oss-120b`).
+
+### Voz
+
+O microfone do chat grava até 60 s, manda pro `api/transcrever.js` e o Whisper do Groq transforma em texto, que segue pro chat como se tivesse sido digitado. Usa a mesma chave e o mesmo `IA_EMAILS`; não precisa configurar nada a mais. No plano grátis o Whisper aguenta bem mais que o chat, então o limite do dia continua sendo o do chat.
+
+Opcional: `GROQ_MODEL_VOZ` troca o modelo de voz (padrão `whisper-large-v3`).
