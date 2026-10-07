@@ -126,7 +126,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     var s=e.target.closest("[data-set]");
     if(s){
       var k=s.dataset.set;
-      var val=s.hasAttribute("data-money")?lerMoney(s):(s.type==="number"?(+s.value||0):s.value);
+      var val=s.type==="checkbox"?s.checked:s.hasAttribute("data-money")?lerMoney(s):(s.type==="number"?(+s.value||0):s.value);
       if(k==="tema"){state.config[k]=val;state.config.temaEscolhido=true;aplicarTema()}
       else state.config[k]=val;
       ui.cfgSujo=false;

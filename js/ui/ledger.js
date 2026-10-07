@@ -120,7 +120,7 @@ export function renderLedger(painel,k,r){
     }else if(refDia!==null){
       var dd=dadosDia(pk.y,pk.m,l.dia);
       spDia.textContent=num(refDia);
-      spDia.className=(dd&&dd.d>0.005)?"ref abatido":"ref";
+      spDia.className=(dd&&dd.d>0.005)?"ref abatido":(dd&&dd.s>0.005)?"ref somado":"ref";
     }else{
       spDia.textContent="–";spDia.className="zero";
     }

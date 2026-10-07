@@ -52,7 +52,7 @@ export function salvarConfigManual(){
   if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
   document.querySelectorAll("#viewSet [data-set]").forEach(function(el){
     var k=el.dataset.set;
-    var val=el.hasAttribute("data-money")?lerMoney(el):(el.type==="number"?(+el.value||0):el.value);
+    var val=el.type==="checkbox"?el.checked:el.hasAttribute("data-money")?lerMoney(el):(el.type==="number"?(+el.value||0):el.value);
     if(k==="tema")state.config.temaEscolhido=true;
     state.config[k]=val;
   });

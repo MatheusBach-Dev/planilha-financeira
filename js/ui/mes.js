@@ -58,8 +58,8 @@ export function renderMes(r,ciclo,plano){
              ciclo.naSeca?"vivendo da sobra do ciclo anterior":"")+
       metric("Sua diária",plano.dias+" dia"+(plano.dias===1?"":"s")+" até "+fmtDia(ciclo.fim),
              money(plano.diaria),plano.nivel==="ok"?"good":(plano.nivel==="semGuardar"?"dim":"bad"),
-             plano.motivo?"limite reduzido hoje":"recalcula a cada lançamento",null,false,plano.motivo)+
-      (plano.pre?"":
+             plano.motivo?"limite reduzido hoje":plano.dica?"limite maior hoje":"recalcula a cada lançamento",null,false,plano.motivo||plano.dica)+
+      (plano.pre||!plano.reservaAtiva?"":
         metric("Fechar o ciclo com",plano.pctR+"% de "+money(plano.salario)+" de reserva",
                money(plano.reserva),ciclo.saldoFim>=plano.reserva?"good":"bad",
                ciclo.saldoFim>=plano.reserva?"projeção está acima disso":"projeção está abaixo disso"))+

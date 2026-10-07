@@ -59,7 +59,8 @@ export function abrirDia(dia,mk){
        '<b>'+money(l.diario>dd.v?l.diario-dd.v:dd.v-l.diario)+'</b></div>'+
        '<p class="sh-sub" style="margin-top:6px">limite de '+money(dd.v)+
        (l.diario?' · gastou '+money(l.diario):' · nada lançado')+
-       (dd.d>0.005?' · limite abatido em '+money(dd.b-dd.v)+' porque você passou nos dias anteriores':'')+'</p>':"")+
+       (dd.d>0.005?' · limite abatido em '+money(dd.b-dd.v)+' porque você passou nos dias anteriores':'')+
+       (dd.s>0.005?' · limite aumentado em '+money(dd.s)+' porque sobrou dos dias anteriores':'')+'</p>':"")+
     corpo+
     (l.pagamento?'<p class="sh-sub tipoDesc" style="margin-top:14px">'+esc(explicaPagamento(pk.y,pk.m,dia))+'</p>':"")+
     '<div style="display:flex;gap:8px;margin-top:18px">'+

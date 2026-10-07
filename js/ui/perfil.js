@@ -35,10 +35,13 @@ export function renderSet() {
     '<p class="hint" style="margin-top:-6px">Quanto você tinha no primeiro dia desse mês. Daí em diante cada mês começa com o fechamento do anterior.</p>' +
     '<div class="row2">' +
     '<label class="fld"><span>Investir por ciclo (%)</span><input type="number" min="0" max="100" data-set="metaEconomia" value="' + (+c.metaEconomia || 0) + '"></label>' +
-    '<label class="fld"><span>Fechar o ciclo com (%)</span><input type="number" min="0" max="100" data-set="metaReserva" value="' + (+c.metaReserva || 0) + '"></label></div>' +
-    '<p class="hint" style="margin-top:-6px">O primeiro é quanto do salário você tira pra investir. O segundo é o mínimo que precisa sobrar na véspera do próximo pagamento. Os dois saem da conta antes de o app calcular sua diária.</p>' +
-    (niv ? '<p class="hint indicado">Indicado pra ' + esc(niv.sugerido.faixa) + ': investir <b>' + String(niv.sugerido.pct).replace(".", ",") +
-      '%</b> e fechar o ciclo com <b>' + niv.sugerido.fecharPct + '%</b>. Veja mais na aba investir.</p>' : '') +
+    (c.usarReserva ? '<label class="fld"><span>Fechar o ciclo com (%)</span><input type="number" min="0" max="100" data-set="metaReserva" value="' + (+c.metaReserva || 0) + '"></label>' : '') + '</div>' +
+    '<label class="chk"><input type="checkbox" data-set="usarReserva"' + (c.usarReserva ? ' checked' : '') + '> Separar uma reserva pro fim do ciclo</label>' +
+    '<p class="hint" style="margin-top:-6px">' + (c.usarReserva
+      ? 'O primeiro é quanto do salário você tira pra investir. O segundo é o mínimo que precisa sobrar na véspera do próximo pagamento. Os dois saem da conta antes de o app calcular sua diária.'
+      : 'É quanto do salário você tira pra investir: sai da conta antes de o app calcular sua diária. Ligue a reserva se quiser que sempre sobre um mínimo na véspera do próximo pagamento.') + '</p>' +
+    (niv ? '<p class="hint indicado">Indicado pra ' + esc(niv.sugerido.faixa) + ': investir <b>' + String(niv.sugerido.pct).replace(".", ",") + '%</b>' +
+      (c.usarReserva ? ' e fechar o ciclo com <b>' + niv.sugerido.fecharPct + '%</b>' : '') + '. Veja mais na aba investir.</p>' : '') +
     '<label class="fld"><span>Tema</span><select data-set="tema">' + opcoesTema(c.tema) + '</select></label>' +
     '<div class="savebar"><button class="btn w" id="btnSalvarCfg"><span>Salvar alterações</span></button></div>' +
     '</section><section class="bloco"><h2>recebimento</h2>' +
