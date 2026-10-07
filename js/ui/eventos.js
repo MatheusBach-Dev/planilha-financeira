@@ -4,17 +4,23 @@ import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {apagarFixo, aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
-import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarIA, limparIA} from "./ia.js";
+import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {cliqueInvestir, mudancaInvestir} from "./investir.js";
 import {aplicarColuna} from "./ledger.js";
 import {escolherMeses, render, trocarLateral} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
+import {cancelarVoz, gravandoVoz, ligarVoz, terminarVoz} from "./voz.js";
 
 export function ligarEventos(){
 scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
-  document.addEventListener("keydown",function(e){if(e.key==="Escape")fecharSheet()});
+  ligarVoz(enviarAudioIA);
+  document.addEventListener("keydown",function(e){
+    if(e.key!=="Escape")return;
+    if(gravandoVoz())return cancelarVoz();
+    fecharSheet();
+  });
   document.addEventListener("click",function(e){
     var t=e.target.closest("[data-tab]");
     if(t)return setTab(t.dataset.tab);
@@ -83,7 +89,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest("#wipe"))return limpar();
     if(e.target.closest("#btnIA"))return abrirIA();
     if(e.target.closest("#btnLateral,#btnFecharLateral"))return trocarLateral();
-    if(e.target.closest("#iaEnviar"))return enviarIA();
+    if(e.target.closest("#iaEnviar"))return gravandoVoz()?terminarVoz():enviarIA();
     if(e.target.closest("#iaLimpar"))return limparIA();
     var io=e.target.closest("[data-iaok]");
     if(io)return confirmarIA(io.dataset.iaok);

@@ -8,9 +8,11 @@ import {acharLancamento, adicionarLancamento, editarLancamento, removerLancament
 import {iaDisponivel, perguntarIA} from "../dados/ia.js";
 import {salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
+import {transcreverAudio} from "../dados/voz.js";
 import {CATS, abrirSheet, fecharSheet, sheet} from "./folhas.js";
 import {ehLargo, render, trocarLateral, vista} from "./render.js";
 import {toast} from "./toast.js";
+import {ICONE_MIC, duracao, limparNotaVoz, micHTML, notaVozHTML, ondaHTML, vozSuportada} from "./voz.js";
 
 // O plano grátis do Groq tem cota diária pequena, então cada mensagem custa um pedido só:
 // o resumo do mês já vai junto, e o app executa as ações e escreve a confirmação sozinho.
@@ -25,13 +27,18 @@ var HISTORICO=8;
 
 var conversa={uid:null,itens:[],enviando:false};
 
-var DICA="Escreva do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. "+
-  "Ela só mexe nos lançamentos. Salário e contas fixas continuam no perfil.";
+function dica(){
+  return (vozSuportada()?"Escreva ou fale":"Escreva")+" do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. "+
+    "Ela só mexe nos lançamentos. Salário e contas fixas continuam no perfil.";
+}
 
-var CAMPO='<div class="ia-campo">'+
-  '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="Escreva aqui…" aria-label="Mensagem para a assistente">'+
-  '<button class="btn" id="iaEnviar">Enviar</button>'+
-'</div>';
+// texto e microfone na mesma caixa; enquanto grava, a caixa vira a faixa com o relógio e a onda
+function campo(){
+  return '<div class="ia-campo"><div class="ia-entrada">'+
+      '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="'+(vozSuportada()?"Escreva ou fale…":"Escreva aqui…")+'" aria-label="Mensagem para a assistente">'+
+      micHTML()+
+    '</div><button class="btn" id="iaEnviar">Enviar</button></div>'+notaVozHTML();
+}
 
 // No computador a conversa fica sempre aberta no painel da direita; no resto, abre na folha.
 export function lateralAtiva(){return ehLargo()&&!vista.semLateral}
@@ -49,7 +56,7 @@ export function montarLateral(){
     var naFolha=$("iaMsgs");
     if(naFolha&&sheet.contains(naFolha))fecharSheet();
     box.innerHTML='<div class="ia-topo"><b>assistente</b><button class="linkish" id="iaLimpar">nova conversa</button></div>'+
-      '<div class="ia-msgs" id="iaMsgs" data-lateral="1" aria-live="polite"></div>'+CAMPO;
+      '<div class="ia-msgs" id="iaMsgs" data-lateral="1" aria-live="polite"></div>'+campo();
   }
   renderConversa();
 }
@@ -66,8 +73,8 @@ export function abrirIA(){
   if(lat)lat.innerHTML="";
   abrirSheet(
     '<h3>assistente</h3>'+
-    '<p class="sh-sub">'+DICA+'</p>'+
-    '<div class="ia-msgs" id="iaMsgs" aria-live="polite"></div>'+CAMPO+
+    '<p class="sh-sub">'+dica()+'</p>'+
+    '<div class="ia-msgs" id="iaMsgs" aria-live="polite"></div>'+campo()+
     '<button class="linkish" id="iaLimpar">começar outra conversa</button>'
   );
   renderConversa();
@@ -82,8 +89,35 @@ export function enviarIA(){
   if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
   if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
   t.value="";
+  limparNotaVoz();
   conversa.itens.push({de:"eu",texto:texto});
   pedir(conversa,[]);
+}
+
+// Mensagem falada: entra na hora como áudio "transcrevendo…" e vira texto quando a transcrição volta;
+// daí segue igual a uma mensagem escrita.
+export function enviarAudioIA(audio,info){
+  if(conversa.enviando)return;
+  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+  if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
+  conversaDoUsuario();
+  var c=conversa,it={de:"eu",texto:"",voz:{segundos:info.segundos,onda:info.onda},ouvindo:true};
+  c.itens.push(it);
+  c.enviando=true;
+  renderConversa();
+  transcreverAudio(audio,{segundos:info.segundos}).then(function(texto){
+    if(c!==conversa)return;
+    it.ouvindo=false;
+    it.texto=String(texto||"").replace(/\s+/g," ").trim().slice(0,500);
+    if(!it.texto){var e=new Error("sem_fala");e.codigo="sem_fala";throw e}
+    pedir(c,[]);
+  }).catch(function(e){
+    if(c!==conversa)return;
+    it.ouvindo=false;it.falhou=true;
+    c.enviando=false;
+    c.itens.push({de:"ia",erro:true,texto:mensagemErroVoz(e)});
+    renderConversa();
+  });
 }
 
 export function limparIA(){
@@ -232,12 +266,27 @@ function mensagemErro(e){
   var c=e&&e.codigo;
   if(c==="limite")return "A IA chegou no limite grátis por agora. Tente de novo em "+tempo(e.espera)+
     ". O botão + adicionar continua funcionando.";
-  if(c==="sem_chave"||c==="chave_invalida")return "A assistente ainda não está configurada: falta a chave do Groq na Vercel.";
+  if(c==="sem_chave")return "A assistente ainda não está configurada: falta a chave GROQ_API_KEY na Vercel.";
+  if(c==="chave_invalida")return "O Groq não aceitou a chave GROQ_API_KEY que está na Vercel. Confira se ela foi copiada inteira ou crie outra.";
   if(c==="login")return "Sua sessão expirou. Saia e entre de novo.";
-  if(c==="sem_acesso")return "Sua conta não está liberada pra usar a assistente.";
+  if(c==="sem_acesso")return "Sua conta não está liberada pra usar a assistente (veja IA_EMAILS na Vercel).";
   if(c==="nao_entendi")return "Não entendi direito. Pode dizer de outro jeito?";
   if(c==="grande")return "A conversa ficou grande demais pro plano grátis. Toque em “começar outra conversa” e tente de novo.";
-  return "Não consegui falar com a IA agora. Tente de novo daqui a pouco.";
+  if(c==="sem_servidor")return "O servidor da IA não existe neste endereço ("+e.detalhe+"). Ela só funciona no site publicado na Vercel, não em prévia local.";
+  if(c==="recusado")return "O Groq recusou o pedido com o modelo "+e.modelo+" ("+e.detalhe+"). Se você trocou o GROQ_MODEL na Vercel, apague essa variável ou volte para openai/gpt-oss-120b e faça um novo deploy.";
+  if(c==="rede")return "Sem conexão com a internet agora. Tente de novo daqui a pouco.";
+  return "Não consegui falar com a IA agora"+(c||e&&e.detalhe?" (erro: "+[c,e.detalhe].filter(Boolean).join(" · ")+")":"")+
+    ". Tente de novo daqui a pouco.";
+}
+
+function mensagemErroVoz(e){
+  var c=e&&e.codigo;
+  if(c==="sem_fala")return "Não ouvi nada nesse áudio. Tente de novo, falando mais perto do microfone.";
+  if(c==="audio_grande")return "O áudio ficou grande demais. Tente uma mensagem mais curta.";
+  if(c==="audio_invalido")return "Não consegui ler esse áudio ("+(e.detalhe||"arquivo")+"). Tente gravar de novo.";
+  if(c==="recusado")return "O Groq recusou a transcrição com o modelo "+e.modelo+" ("+e.detalhe+"). Se você trocou o GROQ_MODEL_VOZ na Vercel, apague essa variável e faça um novo deploy.";
+  if(c==="voz_desligada")return "Gravei, mas a transcrição por voz ainda não foi ligada no servidor. Por enquanto, escreva a mensagem.";
+  return mensagemErro(e);
 }
 
 function tempo(s){
@@ -345,21 +394,34 @@ function n(v){return (Math.round((+v||0)*100)/100).toFixed(2)}
 function renderConversa(){
   var box=$("iaMsgs");
   if(!box)return;
+  var ouvindo=false;
   var h=conversa.itens.map(function(it,i){
+    if(it.de==="eu"&&it.voz){ouvindo=ouvindo||!!it.ouvindo;return msgVoz(it)}
     if(it.de==="eu")return '<div class="ia-msg eu">'+esc(it.texto)+'</div>';
     if(it.de==="ia")return '<div class="ia-msg'+(it.erro?' erro':'')+'">'+esc(it.texto)+'</div>';
     return cartaoAcao(it,i);
   }).join("");
-  if(conversa.enviando)h+='<div class="ia-msg pensando" role="status" aria-label="pensando"><i></i><i></i><i></i></div>';
+  if(conversa.enviando&&!ouvindo)h+='<div class="ia-msg pensando" role="status" aria-label="pensando"><i></i><i></i><i></i></div>';
   var lateral=!!box.dataset.lateral,pode=iaDisponivel();
-  if(lateral&&!h)h='<p class="ia-dica">'+esc(pode?DICA:"Entre com sua conta Google pra conversar com a assistente.")+'</p>';
+  if(lateral&&!h)h='<p class="ia-dica">'+esc(pode?dica():"Entre com sua conta Google pra conversar com a assistente.")+'</p>';
   box.innerHTML=h;
   box.hidden=!h;
   box.scrollTop=box.scrollHeight;
   var b=$("iaEnviar");
   if(b)b.disabled=conversa.enviando||(lateral&&!pode);
+  var mic=$("iaMic");
+  if(mic)mic.disabled=conversa.enviando||(lateral&&!pode);
   var t=$("iaTexto");
   if(t&&lateral)t.disabled=!pode;
+}
+
+// áudio enviado: a onda enquanto transcreve; depois o texto, com a marca de que foi falado
+function msgVoz(it){
+  var marca=function(extra){return '<span class="ia-voz">'+ICONE_MIC+duracao(it.voz.segundos)+(extra?" · "+extra:"")+'</span>'};
+  var onda='<span class="voz-mini" aria-hidden="true">'+ondaHTML(it.voz.onda)+'</span>';
+  if(it.ouvindo)return '<div class="ia-msg eu voz ouvindo" role="status">'+onda+marca("transcrevendo…")+'</div>';
+  if(!it.texto)return '<div class="ia-msg eu voz falhou">'+onda+marca("não transcrito")+'</div>';
+  return '<div class="ia-msg eu voz">'+esc(it.texto)+marca()+'</div>';
 }
 
 function cartaoAcao(it,i){
