@@ -1,4 +1,4 @@
-import {calcular, faltaMeta, inicialDe, menorMesConhecido} from "./calculo.js";
+import {calcular, faltaMeta, inicialDe, menorMesConhecido, pctReserva} from "./calculo.js";
 import {infoCiclo, proxPagamentoDepois, somaNoIntervalo} from "./ciclo.js";
 import {fracaoCor} from "./cores.js";
 import {HOJE_KEY, fmtDia, hojeZero, key, maisDias, parseKey, somaMes} from "./datas.js";
@@ -98,7 +98,7 @@ export function saudePlanilha(){
   if(!c)return {nivel:"sem-dados",fracao:null,emDia:false,saldoFim:null,reserva:0,faltaInvestir:0,negativoEm:null,
                 motivos:["Cadastre seu salário em perfil pra o app acompanhar o seu ciclo."]};
   var hj=hojeZero(),sal=c.salario;
-  var reserva=sal*pctMeta("metaReserva")/100;
+  var reserva=sal*pctReserva()/100;
   var falta=faltaMeta(sal,state.config.metaEconomia,c.mov.economia);
   var negativoEm=null,saldoHoje=0,pk={y:hj.getFullYear(),m:hj.getMonth()};
   for(var g=0;g<3&&!negativoEm;g++){

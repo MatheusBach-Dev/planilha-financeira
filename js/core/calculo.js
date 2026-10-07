@@ -92,6 +92,11 @@ export function planoFixo(antigo,novo,lista){
   return {acao:"edita",anterior:ant};
 }
 
+// "fechar o ciclo com X%" só vale quando a pessoa liga; desligada, nada é separado da diária
+export function pctReserva(){
+  return state.config.usarReserva?Math.max(0,Math.min(100,+state.config.metaReserva||0)):0;
+}
+
 export function faltaMeta(sal,pct,feito){
   pct=Math.max(0,Math.min(100,+pct||0));
   var alvo=sal*pct/100;

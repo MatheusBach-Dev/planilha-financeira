@@ -1,5 +1,5 @@
 import {apertoDoCiclo, planoAperto} from "./aperto.js";
-import {calcular, faltaMeta, inicialDe} from "./calculo.js";
+import {calcular, faltaMeta, inicialDe, pctReserva} from "./calculo.js";
 import {cent, chaveDia, hoje, hojeZero, key, maisDias, parseKey, somaMes} from "./datas.js";
 import {state, ui} from "./estado.js";
 import {diaPagamento, ehPagamento, primeiroPagamento, temPagamento, valorPagamento} from "./pagamento.js";
@@ -90,7 +90,7 @@ export function baseDoCiclo(inicio,fim){
   var saldoAntes=saldoNaData(antes);
   var mov=somaNoIntervalo(inicio,fim);
   var sal=salarioDoCiclo(inicio);
-  var reserva=sal*Math.max(0,Math.min(100,+state.config.metaReserva||0))/100;
+  var reserva=sal*pctReserva()/100;
   var alvo=sal*Math.max(0,Math.min(100,+state.config.metaEconomia||0))/100;
   var falta=faltaMeta(sal,state.config.metaEconomia,mov.economia);
   var dias=Math.round((fim-inicio)/86400000)+1;
@@ -117,11 +117,12 @@ export function montarDiarias(nMeses){
   if(hjFim>limite)limite=hjFim;
   var pre=inicioPreCiclo();
   var cur=inicioDoCiclo(ini)||ini;
-  var ciclo=null,apPlano=null,divida=0,guarda=0,cacheMes={};
-  function diarioEm(dt){
+  // acum: o que sobrou (+) ou passou (−) da diária nos dias anteriores do ciclo
+  var ciclo=null,apPlano=null,acum=0,guarda=0,cacheMes={};
+  function linhaEm(dt){
     var k=key(dt.getFullYear(),dt.getMonth());
     if(!cacheMes[k])cacheMes[k]=calcular(k,inicialDe(k));
-    return cacheMes[k].linhas[dt.getDate()-1].diario;
+    return cacheMes[k].linhas[dt.getDate()-1];
   }
   while(cur<=limite&&guarda++<2500){
     if(ehPagamento(cur)||(pre&&+cur===+pre)){
@@ -132,21 +133,27 @@ export function montarDiarias(nMeses){
         var ap=apertoDoCiclo(cur,fim);
         apPlano=ap?planoAperto(ciclo,ap):null;
       }else{ciclo=null;apPlano=null}
-      divida=0;
+      acum=0;
     }
     if(ciclo){
-      var ch=chaveDia(cur),noAperto=false,v,dv=divida;
+      var ch=chaveDia(cur),noAperto=false,v,dv=Math.max(0,-acum),sb=Math.max(0,acum);
       if(apPlano&&cur>=apPlano.apIni){
         noAperto=cur<=apPlano.apFim;
         v=noAperto?apPlano.r:apPlano.depois;
-        dv=0;
+        dv=0;sb=0;
       }else{
-        v=Math.max(0,cent(ciclo.base-divida));
+        v=Math.max(0,cent(ciclo.base+acum));
       }
-      mapaDiaria[ch]={v:v,d:dv,b:ciclo.base,aperto:noAperto,plano:apPlano};
+      mapaDiaria[ch]={v:v,d:dv,s:sb,b:ciclo.base,aperto:noAperto,plano:apPlano};
       cicloDoDia[ch]=ciclo;
-      if(!(apPlano&&cur>=apPlano.apIni))
-        divida=Math.max(0,cent(divida+diarioEm(cur)-ciclo.base));
+      if(!(apPlano&&cur>=apPlano.apIni)){
+        var l=linhaEm(cur),saldoDia=ciclo.base-l.diario;
+        // dia que já passou e foi marcado como anotado: a sobra ou o excesso entram na conta.
+        // Dia que passou sem marcar: só o excesso entra (o app não sabe se você gastou).
+        // Hoje e os próximos dias: só pagam o excesso; a sobra não se espalha pelos dias que ainda vêm.
+        if(cur<hj)acum=cent(acum+(l.conferido?saldoDia:Math.min(0,saldoDia)));
+        else acum=Math.min(0,cent(acum+saldoDia));
+      }
     }
     cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+1);
   }

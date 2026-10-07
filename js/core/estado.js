@@ -8,7 +8,7 @@ export var LKEY="bach.saldos.v1";
 
 export function chaveLocal(){return sessao.usuarioId?(LKEY+":"+sessao.usuarioId):LKEY}
 
-export var padraoConfig={nome:"matheus bach",saldoInicial:0,saldoInicialMes:HOJE_KEY,renda:0,metaEconomia:20,metaReserva:10,tema:"dark",fixos:[],pagamentos:[],investimentos:[],reservaMeses:6};
+export var padraoConfig={nome:"matheus bach",saldoInicial:0,saldoInicialMes:HOJE_KEY,renda:0,metaEconomia:20,metaReserva:10,usarReserva:false,tema:"dark",fixos:[],pagamentos:[],investimentos:[],reservaMeses:6};
 
 export var state={config:Object.assign({},padraoConfig),meses:{}};
 

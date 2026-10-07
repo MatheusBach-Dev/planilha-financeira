@@ -1,4 +1,4 @@
-import {calcular, faltaMeta, inicialDe} from "./calculo.js";
+import {calcular, faltaMeta, inicialDe, pctReserva} from "./calculo.js";
 import {cicloDoDia, dadosDia, saldoNaData, somaNoIntervalo} from "./ciclo.js";
 import {chaveDia, difDias, hoje, hojeZero, key, maisDias} from "./datas.js";
 import {mesLeitura, state} from "./estado.js";
@@ -29,7 +29,7 @@ export function planoAperto(ciclo,ap){
   if(D<1)return null;
   var N=Math.max(0,Math.min(D,difDias(refIni,apFim)+1));
   var sal=ciclo.salario||0;
-  var reserva=sal*Math.max(0,Math.min(100,+state.config.metaReserva||0))/100;
+  var reserva=sal*pctReserva()/100;
   var falta=faltaMeta(sal,state.config.metaEconomia,somaNoIntervalo(ciclo.inicio,ciclo.fim).economia);
   var amanha=maisDias(hj,1);
   var futuros=amanha<=ciclo.fim?somaNoIntervalo(amanha,ciclo.fim).diario:0;
@@ -69,7 +69,7 @@ export function planoCiclo(ciclo){
   if(!ciclo)return null;
   var hj=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
   var dd=dadosDia(hj.getFullYear(),hj.getMonth(),hj.getDate());
-  var base=dd?dd.b:0,hojeDiaria=dd?dd.v:0,atraso=dd?dd.d:0;
+  var base=dd?dd.b:0,hojeDiaria=dd?dd.v:0,atraso=dd?dd.d:0,sobra=dd&&dd.s?dd.s:0;
   var ap=dd?dd.plano:null,noAperto=!!(dd&&dd.aperto),pv=ap?null:previewAperto();
   var sal=ciclo.salario||0;
   var kh=key(hj.getFullYear(),hj.getMonth());
@@ -78,18 +78,22 @@ export function planoCiclo(ciclo){
   var resta=Math.max(0,hojeDiaria-gastoHoje);
   var passou=Math.max(0,gastoHoje-hojeDiaria);
   var pctG=Math.max(0,Math.min(100,+state.config.metaEconomia||0));
-  var pctR=Math.max(0,Math.min(100,+state.config.metaReserva||0));
+  var pctR=pctReserva();
   var guardar=sal*pctG/100,reserva=sal*pctR/100;
   var jaGuardado=ciclo.mov.economia;
   var faltaGuardar=faltaMeta(sal,pctG,jaGuardado);
 
-  var nivel="ok",motivo="";
+  // motivo = aviso de problema (a tela pinta de vermelho); dica = explicação neutra
+  var nivel="ok",motivo="",dica="";
   if(atraso>0){
     var dias=base>0?Math.ceil(atraso/base):0;
     nivel="abatendo";
     motivo="Você já gastou "+money(atraso)+" além do seu ritmo, então o limite de hoje é "+
       money(hojeDiaria)+" em vez de "+money(base)+
       (dias>1?". Segurando assim, em "+dias+" dias ele volta ao normal.":". Amanhã ele já volta ao normal.");
+  }else if(sobra>0.005){
+    dica="Você gastou menos do que podia nos dias anteriores, então hoje dá até "+money(hojeDiaria)+": "+
+      money(base)+" da diária mais "+money(sobra)+" que sobraram.";
   }
   if(base<=0){
     nivel="vermelho";
@@ -97,6 +101,7 @@ export function planoCiclo(ciclo){
   }
   return {salario:sal,guardar:guardar,reserva:reserva,jaGuardado:jaGuardado,pre:!!ciclo.pre,
           faltaGuardar:faltaGuardar,metaBatida:guardar>0&&faltaGuardar<=0,dias:ciclo.restantes,gasto:ciclo.mov.diario,
-          diaria:hojeDiaria,base:base,atraso:atraso,nivel:nivel,motivo:motivo,pctG:pctG,pctR:pctR,
+          diaria:hojeDiaria,base:base,atraso:atraso,sobraAcumulada:sobra,nivel:nivel,motivo:motivo,dica:dica,pctG:pctG,pctR:pctR,
+          reservaAtiva:!!state.config.usarReserva,
           gastoHoje:gastoHoje,resta:resta,passou:passou,aperto:ap,noAperto:noAperto,preview:pv};
 }
