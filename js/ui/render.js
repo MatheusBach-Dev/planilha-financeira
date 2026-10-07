@@ -6,30 +6,59 @@ import {state, ui} from "../core/estado.js";
 import {$, MESES, esc, money} from "../core/formato.js";
 import {temPagamento, valorPagamento} from "../core/pagamento.js";
 import {iaDisponivel} from "../dados/ia.js";
+import {sessao} from "../dados/sessao.js";
+import {montarLateral} from "./ia.js";
+import {renderInvestir} from "./investir.js";
 import {renderPaineis} from "./ledger.js";
 import {renderMes} from "./mes.js";
-import {renderSet} from "./perfil.js";
+import {avatarHTML, renderSet} from "./perfil.js";
 
 export var mqLargo=window.matchMedia("(min-width:1100px)");
 
 export function ehLargo(){return mqLargo.matches}
+
+// meses lado a lado no computador: sempre abre com 3, dá pra escolher de 2 a 5.
+// semLateral = painel da direita (resumo do ciclo + assistente) escondido, guardado só neste aparelho
+export var vista={meses:3,semLateral:false};
+try{vista.semLateral=localStorage.getItem("bach.lateral")==="fechada"}catch(e){}
+
+export function trocarLateral(){
+  vista.semLateral=!vista.semLateral;
+  try{localStorage.setItem("bach.lateral",vista.semLateral?"fechada":"aberta")}catch(e){}
+  render();
+}
+
+export function mesesNaTela(){return ehLargo()?vista.meses:1}
+
+export function escolherMeses(n){
+  vista.meses=Math.max(2,Math.min(5,+n||3));
+  render();
+}
 
 export function render(){
   var focoAnt=document.activeElement;
   var marcaFoco=(focoAnt&&focoAnt.dataset&&focoAnt.dataset.set)?focoAnt.dataset.set:null;
   limparCache();
   document.documentElement.classList.toggle("largo",ehLargo());
+  document.documentElement.classList.toggle("semlateral",vista.semLateral);
+  $("btnLateral").setAttribute("aria-pressed",vista.semLateral?"false":"true");
+  document.documentElement.dataset.aba=ui.tab;
   var k=key(ui.atual.y,ui.atual.m);
   var r=calcular(k,inicialDe(k));
   var ciclo=infoCiclo();
-  montarDiarias();
+  montarDiarias(mesesNaTela());
   var plano=planoCiclo(ciclo);
   ui.permitido=plano?(plano.base||plano.diaria):r.permitido;
 
   $("brandName").textContent=state.config.nome||"saldos";
   $("btnIA").hidden=!iaDisponivel();
-  var fim=somaMes(ui.atual,2);
-  $("monthTitle").innerHTML=ehLargo()
+  montarLateral();
+  var u=sessao.user,cl=$("contaLateral");
+  cl.hidden=!u;
+  if(u)cl.innerHTML=avatarHTML(u)+'<span class="d">'+esc(u.displayName||u.email||"conta")+
+    (u.displayName&&u.email?'<small>'+esc(u.email)+'</small>':'')+'</span>';
+  var fim=somaMes(ui.atual,mesesNaTela()-1);
+  $("monthTitle").innerHTML=ehLargo()&&ui.tab==="saldos"
     ? MESES[ui.atual.m]+" a "+MESES[fim.m]+" <em>"+(ui.atual.y===fim.y?ui.atual.y:ui.atual.y+"–"+fim.y)+"</em>"
     : MESES[ui.atual.m]+" <em>"+ui.atual.y+"</em>";
   $("checkinDay").textContent=r.total.marcados;
@@ -73,6 +102,7 @@ export function render(){
   renderPaineis();
   if(ui.tab==="mes")renderMes(r,ciclo,plano);
   if(ui.tab==="set")renderSet();
+  if(ui.tab==="investir")renderInvestir();
 
   if(marcaFoco&&document.activeElement!==focoAnt){
     var volta=document.querySelector('#viewSet [data-set="'+marcaFoco+'"]');
@@ -101,15 +131,17 @@ export function renderPlano(p,ciclo){
   l.push('<div class="pl"><span>limite de hoje</span><b>'+money(p.diaria)+'</b></div>');
   if(Math.abs(p.base-p.diaria)>0.005)
     l.push('<div class="pl"><span>sua diária normal</span><b>'+money(p.base)+'</b></div>');
-  l.push('<div class="pl"><span>investir neste ciclo'+(p.pctG?" ("+p.pctG+"%)":"")+'</span><b>'+
-    (p.jaGuardado>=p.guardar&&p.guardar>0
-      ? '<span class="feito">'+money(p.guardar)+' ✓</span>'
-      : money(p.faltaGuardar)+(p.jaGuardado>0?' <span class="feito">de '+money(p.guardar)+'</span>':''))+'</b></div>');
-  var okReserva=ciclo.saldoFim>=p.reserva-0.005;
-  l.push('<div class="pl '+(okReserva?"ok":"vermelho")+'"><span>fechar dia '+ciclo.fim.getDate()+
-    ' com pelo menos'+(p.pctR?" ("+p.pctR+"%)":"")+'</span><b>'+money(p.reserva)+'</b></div>');
-  if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(ciclo.saldoFim)+
-    ', ou seja, '+money(p.reserva-ciclo.saldoFim)+' abaixo da sua reserva.</div>');
+  if(!p.pre){
+    l.push('<div class="pl"><span>investir neste ciclo'+(p.pctG?" ("+p.pctG+"%)":"")+'</span><b>'+
+      (p.metaBatida
+        ? '<span class="feito">'+money(p.guardar)+' ✓</span>'
+        : money(p.faltaGuardar)+(p.jaGuardado>0?' <span class="feito">de '+money(p.guardar)+'</span>':''))+'</b></div>');
+    var okReserva=ciclo.saldoFim>=p.reserva-0.005;
+    l.push('<div class="pl '+(okReserva?"ok":"vermelho")+'"><span>fechar dia '+ciclo.fim.getDate()+
+      ' com pelo menos'+(p.pctR?" ("+p.pctR+"%)":"")+'</span><b>'+money(p.reserva)+'</b></div>');
+    if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(ciclo.saldoFim)+
+      ', ou seja, '+money(p.reserva-ciclo.saldoFim)+' abaixo da sua reserva.</div>');
+  }
   l.push('<div class="pl"><span>já gastou nestes '+(ciclo.total-p.dias+1)+' dias</span><b>'+money(p.gasto)+'</b></div>');
   var ap=p.aperto,pv=p.preview;
   if(ap){

@@ -4,19 +4,28 @@ import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {apagarFixo, aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
-import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarIA, limparIA} from "./ia.js";
+import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
-import {render} from "./render.js";
+import {cliqueInvestir, mudancaInvestir} from "./investir.js";
+import {aplicarColuna} from "./ledger.js";
+import {escolherMeses, render, trocarLateral} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
+import {cancelarVoz, gravandoVoz, ligarVoz, terminarVoz} from "./voz.js";
 
 export function ligarEventos(){
 scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
-  document.addEventListener("keydown",function(e){if(e.key==="Escape")fecharSheet()});
+  ligarVoz(enviarAudioIA);
+  document.addEventListener("keydown",function(e){
+    if(e.key!=="Escape")return;
+    if(gravandoVoz())return cancelarVoz();
+    fecharSheet();
+  });
   document.addEventListener("click",function(e){
     var t=e.target.closest("[data-tab]");
     if(t)return setTab(t.dataset.tab);
-    if(e.target.closest("#fabAdd"))return abrirNovo();
+    if(cliqueInvestir(e))return;
+    if(e.target.closest("#fabAdd,#topAdd"))return abrirNovo();
     var cm=e.target.closest("[data-checkinmes]");
     if(cm)return abrirCheckin(cm.dataset.checkinmes);
     if(e.target.closest("#btnCheckin"))return abrirCheckin();
@@ -70,6 +79,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest("#btnGoogle"))return entrarGoogle();
     if(e.target.closest("#btnSair"))return sairDaConta();
     if(e.target.closest("#btnSalvarCfg"))return salvarConfigManual();
+    if(e.target.closest("#contaLateral"))return setTab("set");
     if(e.target.closest("#btnAperto"))return aplicarAperto();
     if(e.target.closest("#btnDesfazerAperto"))return desfazerAperto();
     if(e.target.closest("#minSheet"))return fecharSheet();
@@ -78,7 +88,8 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest("#fSalvar"))return salvarFixo();
     if(e.target.closest("#wipe"))return limpar();
     if(e.target.closest("#btnIA"))return abrirIA();
-    if(e.target.closest("#iaEnviar"))return enviarIA();
+    if(e.target.closest("#btnLateral,#btnFecharLateral"))return trocarLateral();
+    if(e.target.closest("#iaEnviar"))return gravandoVoz()?terminarVoz():enviarIA();
     if(e.target.closest("#iaLimpar"))return limparIA();
     var io=e.target.closest("[data-iaok]");
     if(io)return confirmarIA(io.dataset.iaok);
@@ -104,12 +115,14 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     }
   });
   document.addEventListener("input",function(e){
+    if(mudancaInvestir(e))return;
     if(e.target.closest&&e.target.closest("#viewSet [data-set]")){
       ui.cfgSujo=true;atualizaSaveBar();
     }
     if(e.target.closest&&e.target.closest("#sheet"))atualizaAvisoFixo();
   });
   document.addEventListener("change",function(e){
+    if(mudancaInvestir(e))return;
     var s=e.target.closest("[data-set]");
     if(s){
       var k=s.dataset.set;
@@ -123,8 +136,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.id==="fRegra")atualizaRegraFixo();
     if(e.target.id==="pRegra")return atualizaRegraPag();
     if(e.target.closest&&e.target.closest("#sheet"))return atualizaAvisoFixo();
-    if(e.target.id==="colSel"){
-      document.querySelectorAll("#painels table").forEach(function(t){t.dataset.col=e.target.value});
-    }
+    if(e.target.id==="qtdSel")return escolherMeses(e.target.value);
+    if(e.target.id==="colSel")return aplicarColuna();
   });
 }

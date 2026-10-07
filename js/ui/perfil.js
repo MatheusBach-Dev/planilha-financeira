@@ -5,24 +5,27 @@ import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
 import { diaPagamento, mesExtenso, temPagamento, textoRegraPag } from "../core/pagamento.js";
 import { sessao } from "../dados/sessao.js";
 import { rotuloTipo } from "./folhas.js";
+import { carregarInvestir, investirLiberado, modInvest } from "./investir.js";
 
 export function atualizaSaveBar() {
   var b = $("btnSalvarCfg");
   if (!b) return;
-  b.classList.toggle("ok", !ui.cfgSujo);
-  b.firstChild.textContent = ui.cfgSujo ? "Salvar alterações" : "Tudo salvo ✓";
+  b.firstChild.textContent = "Salvar alterações";
 }
 
 export function renderSet() {
   var c = state.config, v = $("viewSet");
+  var mi = investirLiberado() ? modInvest() : null;
+  if (investirLiberado() && !mi) carregarInvestir();
+  var niv = mi && mi.nivelInvestidor ? mi.nivelInvestidor() : null;
   var pags = (c.pagamentos || []).slice().sort(function (a, b) { return (a.desde || "") < (b.desde || "") ? -1 : 1 });
   var fixos = (c.fixos || []).slice().sort(function (a, b) {
     return fixoEncerrado(a) - fixoEncerrado(b) ||
       diaDoFixo(a, ui.atual.y, ui.atual.m) - diaDoFixo(b, ui.atual.y, ui.atual.m) ||
       ((a.desde || "") < (b.desde || "") ? -1 : (a.desde || "") > (b.desde || "") ? 1 : 0);
   });
-  v.innerHTML =
-    (sessao.user ? '<div class="conta"><div class="d">' + esc(sessao.user.displayName || sessao.user.email || "conta") +
+  v.innerHTML = '<div class="blocos"><section class="bloco">' +
+    (sessao.user ? '<div class="conta">' + avatarHTML(sessao.user) + '<div class="d">' + esc(sessao.user.displayName || sessao.user.email || "conta") +
       '<small>' + esc(sessao.user.email || "") + '</small></div><button class="rm" id="btnSair">sair</button></div>' +
   '<p class="hint" style="margin-top:-10px">Seus dados ficam nesta conta. Entre pelo celular ou por outro computador e os números são os mesmos.</p>' : '') +
     '<h2>configurações</h2><p class="hint">Vale para todos os meses.</p>' +
@@ -34,10 +37,11 @@ export function renderSet() {
     '<label class="fld"><span>Investir por ciclo (%)</span><input type="number" min="0" max="100" data-set="metaEconomia" value="' + (+c.metaEconomia || 0) + '"></label>' +
     '<label class="fld"><span>Fechar o ciclo com (%)</span><input type="number" min="0" max="100" data-set="metaReserva" value="' + (+c.metaReserva || 0) + '"></label></div>' +
     '<p class="hint" style="margin-top:-6px">O primeiro é quanto do salário você tira pra investir. O segundo é o mínimo que precisa sobrar na véspera do próximo pagamento. Os dois saem da conta antes de o app calcular sua diária.</p>' +
-    '<label class="fld"><span>Tema</span><select data-set="tema">' +
-    opt("dark", "Escuro", c.tema) + opt("light", "Claro", c.tema) + opt("auto", "Igual ao sistema", c.tema) + '</select></label>' +
-    '<div class="savebar"><button class="btn w" id="btnSalvarCfg"><span>Tudo salvo</span></button></div>' +
-    '<hr class="sep"><h2>recebimento</h2>' +
+    (niv ? '<p class="hint indicado">Indicado pra ' + esc(niv.sugerido.faixa) + ': investir <b>' + String(niv.sugerido.pct).replace(".", ",") +
+      '%</b> e fechar o ciclo com <b>' + niv.sugerido.fecharPct + '%</b>. Veja mais na aba investir.</p>' : '') +
+    '<label class="fld"><span>Tema</span><select data-set="tema">' + opcoesTema(c.tema) + '</select></label>' +
+    '<div class="savebar"><button class="btn w" id="btnSalvarCfg"><span>Salvar alterações</span></button></div>' +
+    '</section><section class="bloco"><h2>recebimento</h2>' +
     '<p class="hint">O app acha sozinho o dia em que o dinheiro cai, pulando fins de semana e feriados nacionais. Cada período vale do mês escolhido em diante, então registrar um aumento não mexe nos meses antigos.</p>' +
     (pags.length ? pags.map(function (pg) {
       return '<div class="fixo" data-editpag="' + esc(pg.id) + '"><div class="d">' + esc(pg.desc || "salário") +
@@ -46,7 +50,7 @@ export function renderSet() {
     }).join("") : '<p class="empty">Nenhum recebimento cadastrado.</p>') +
     '<button class="btn ghost w" id="addPag" style="margin-top:14px">' + (pags.length ? "Meu salário mudou a partir de um mês" : "Cadastrar recebimento") + '</button>' +
     previaPagamento() +
-    '<hr class="sep"><h2>contas fixas</h2>' +
+    '</section><section class="bloco"><h2>contas fixas</h2>' +
     '<p class="hint">Entram sozinhas todo mês, a partir do mês que você escolher. Toque numa delas pra editar: se trocar o valor e escolher um mês mais pra frente, a mudança vale só dali em diante. Parar uma conta tira ela de hoje em diante, e o que já passou fica no histórico. Pra pular uma só num mês, abra o dia e remova ali.</p>' +
     (fixos.length ? fixos.map(function (f) {
       var periodo = f.ate || f.serie || (f.desde && f.desde > HOJE_KEY) ? textoPeriodoFixo(f) + ' · ' : '';
@@ -56,8 +60,7 @@ export function renderSet() {
         (fim ? '' : '<button class="rm" data-delfixo="' + esc(f.id) + '">' + (historicoAte(f) ? 'parar' : 'remover') + '</button>') + '</div>';
     }).join("") : '<p class="empty">Nenhuma conta fixa ainda.</p>') +
     '<button class="btn ghost w" id="addFixo" style="margin-top:14px">Adicionar conta fixa</button>' +
-    '<p class="hint" style="margin-top:30px;text-align:center">projeção, não adivinhação</p>';
-    '<button class="btn ghost w" id="addFixo" style="margin-top:14px">Adicionar conta fixa</button>' +
+    '</section></div>' +
     '<p class="hint" style="margin-top:30px;text-align:center">projeção, não adivinhação</p>';
   aplicarMascara(v);
   atualizaSaveBar();
@@ -108,6 +111,21 @@ export function aplicarMascara(root) {
 export function lerMoney(i) {
   if (!i) return 0;
   return Number(String(i.value).replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+// "Igual ao sistema" + o tema contrário ao do sistema: nunca aparecem duas opções que dão no mesmo
+export function opcoesTema(atual) {
+  var escuro = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  var outro = escuro ? "light" : "dark";
+  var sel = atual === outro ? outro : "auto";
+  return opt("auto", "Igual ao sistema", sel) + opt(outro, escuro ? "Claro" : "Escuro", sel);
+}
+
+// foto da conta Google; se não tiver foto (ou ela não carregar), fica a inicial do nome
+export function avatarHTML(u) {
+  var ini = esc(((u.displayName || u.email || "?").trim().charAt(0) || "?").toUpperCase());
+  return '<span class="avatar" aria-hidden="true">' + ini +
+    (u.photoURL ? '<img src="' + esc(u.photoURL) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>';
 }
 
 export function opt(v, l, cur) { return '<option value="' + v + '"' + (cur === v ? " selected" : "") + '>' + l + '</option>' }

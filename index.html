@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR" data-theme="dark" data-aba="saldos">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -17,7 +17,10 @@
 <link rel="stylesheet" href="css/navegacao.css">
 <link rel="stylesheet" href="css/sobreposicoes.css">
 <link rel="stylesheet" href="css/ia.css">
+<link rel="stylesheet" href="css/voz.css">
 <link rel="stylesheet" href="css/responsivo.css">
+<link rel="stylesheet" href="css/investir.css">
+<link rel="stylesheet" href="css/computador.css">
 </head>
 <body>
 
@@ -32,7 +35,13 @@
       <svg viewBox="-60 -60 120 120" aria-hidden="true"><path fill="currentColor" d="M -6.47 -6.25 C -8.82 -13.59 3.13 -44.69 -5.85 -55.69 C 26.33 -36.24 11.85 -11.05 5.03 -7.46 L 3.95 -8.09 C 10.19 -12.59 34.78 -8.67 40.93 -18.22 C 34.09 11.08 14.17 7.85 8.65 2.48 L 8.91 1.25 C 15.12 5.81 16.62 26.59 26.23 29.13 C 0.00 31.36 -3.09 15.90 0.31 8.99 L 1.56 8.86 C -0.85 16.18 -27.36 32.60 -26.60 46.07 C -40.48 13.15 -16.08 1.97 -8.46 3.08 L -7.95 4.23 C -15.65 4.19 -32.40 -13.09 -42.73 -9.08 C -20.54 -28.27 -6.85 -14.68 -5.54 -7.09 Z"/></svg>
       <b id="brandName">matheus bach</b>
     </div>
-    <div class="top-dir">
+    <nav class="topnav" aria-label="Seções">
+      <button data-tab="saldos" aria-current="true">saldos</button>
+      <button data-tab="mes">mês</button>
+      <button data-tab="investir">investir</button>
+      <button data-tab="set">perfil</button>
+    </nav>
+    <div class="topacoes top-dir">
       <button class="ia-btn" id="btnIA" aria-label="Abrir a assistente" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M11 3.5l1.9 5.1 5.1 1.9-5.1 1.9L11 17.5l-1.9-5.1L4 10.5l5.1-1.9z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
         IA
@@ -40,6 +49,14 @@
       <button class="checkin" id="btnCheckin">
         <span class="cal" id="checkinDay">0</span>
         <span id="checkinTxt">dias lançados</span>
+      </button>
+      <button class="lateral-btn" id="btnLateral" aria-pressed="true" aria-label="Mostrar ou esconder o painel da direita" title="Mostrar ou esconder o painel da direita">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M15 4.5v15"/></svg>
+        painel
+      </button>
+      <button class="topadd" id="topAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        lançar
       </button>
     </div>
   </header>
@@ -54,16 +71,27 @@
       </button>
     </div>
     <div id="heroSingle">
+      <button class="lateral-fechar" id="btnFecharLateral" aria-label="Esconder o painel da direita" title="Esconder o painel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
       <p class="lead" id="heroLead">você termina o mês com</p>
       <p class="big" id="heroNum">R$ 0,00</p>
       <div class="plano" id="plano"></div>
       <p class="sub" id="heroSub"></p>
+      <div class="ia-lateral" id="iaLateral"></div>
+      <button class="conta-lateral" id="contaLateral" title="Ver o perfil" hidden></button>
     </div>
   </section>
 
   <section class="view" id="viewSaldos">
     <div id="firstRun"></div>
     <div class="colpick">
+      <select id="qtdSel" class="qtdsel" aria-label="Quantos meses mostrar lado a lado">
+        <option value="2">2 meses</option>
+        <option value="3">3 meses</option>
+        <option value="4">4 meses</option>
+        <option value="5">5 meses</option>
+      </select>
       <select id="colSel" aria-label="Coluna visível">
         <option value="diario">mostrar diário</option>
         <option value="saida">mostrar saída</option>
@@ -75,19 +103,24 @@
 
   <section class="view mes" id="viewMes" hidden></section>
   <section class="view set" id="viewSet" hidden></section>
+  <section class="view investir" id="viewInvestir" hidden></section>
 
   <nav class="tabbar">
     <button data-tab="saldos" aria-current="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5M4 9.5h16M4 14.5h16M20 19V5"/></svg>
       saldos
     </button>
+    <button data-tab="mes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      mês
+    </button>
     <button class="fab" id="fabAdd" aria-label="Novo lançamento">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       adicionar
     </button>
-    <button data-tab="mes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
-      mês
+    <button data-tab="investir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5.5-5.5 4 4L20 10"/><path d="M15 10h5v5"/></svg>
+      investir
     </button>
     <button data-tab="set">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2 16.7 7.3M7.3 16.7l-2.1 2.1"/></svg>

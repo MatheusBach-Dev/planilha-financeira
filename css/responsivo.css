@@ -1,7 +1,7 @@
 /* ————— celular ————— */
 @media (max-width:559px){
   .hero{padding:16px 14px 15px}
-  .mes,.set{padding:16px 14px}
+  .mes,.set{padding-top:16px;padding-left:14px;padding-right:14px}
   .note{margin:14px}
 
   /* a tabela tem 3 colunas aqui; folga menor pro número nunca encostar */

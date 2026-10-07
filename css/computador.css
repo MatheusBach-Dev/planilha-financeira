@@ -1,0 +1,165 @@
+/* layout do computador e do tablet deitado (o celular usa só os outros CSS) */
+
+/* ————— a partir de tablet deitado: navegação no topo, folhas viram janelas ————— */
+@media (min-width:760px){
+  .topbar{padding:0 24px;gap:24px}
+  .brand{flex:none}
+  .topnav{display:flex;gap:2px;flex:1;min-width:0}
+  .topnav button{
+    padding:7px 14px;border-radius:99px;font-size:13.5px;color:rgba(244,239,227,.62);
+    transition:background-color .15s ease,color .15s ease;
+  }
+  .topnav button:hover{color:var(--chrome-text);background:rgba(244,239,227,.07)}
+  .topnav button[aria-current="true"]{color:var(--chrome-text);background:rgba(244,239,227,.13)}
+  .topadd{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--chrome-text);color:var(--chrome);
+    padding:7px 15px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:600;
+  }
+  .topadd svg{width:15px;height:15px}
+  .topadd:hover{opacity:.9}
+  .tabbar{display:none}
+  .view{padding-bottom:48px}
+  .toast{bottom:28px}
+
+  /* coluna mais larga e manchete em duas colunas: número à esquerda, plano à direita */
+  .app{max-width:980px}
+  .hero{padding:20px 24px}
+  html:not(.largo)[data-aba="set"] .hero{display:none}
+  #heroSingle{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+    grid-template-areas:"lead plano" "big plano" "sub plano";
+    grid-template-rows:auto auto 1fr;column-gap:40px;
+  }
+  #heroSingle:has(.plano:empty){grid-template-columns:1fr}
+  #heroSingle .lead{grid-area:lead}
+  #heroSingle .big{grid-area:big}
+  #heroSingle .sub{grid-area:sub;align-self:start}
+  #heroSingle .plano{grid-area:plano;margin-top:0}
+  #heroSingle .plano>.pl:first-child{border-top:0;padding-top:2px}
+
+  /* folha de baixo vira janela no meio da tela */
+  .scrim{align-items:center;padding:24px}
+  .sheet{
+    max-width:560px;max-height:88vh;border-radius:16px;padding:4px 24px 24px;
+    transform:translateY(10px) scale(.98);box-shadow:0 30px 80px rgba(0,0,0,.45);
+  }
+  .sheet-top{height:40px;margin-bottom:0}
+  .grab{visibility:hidden}
+  .min{background:none;color:var(--text-dim)}
+  .min:hover{background:var(--surface-2);color:var(--text)}
+  .min svg:first-child{display:none}
+  .min .x{display:block}
+  .fld input,.fld select{font-size:14.5px;padding:10px 12px}
+
+  /* mês e perfil: o formato de antes, de cima pra baixo numa coluna só, sem esticar campos e botões */
+  .mes,.set{padding-top:24px;padding-left:24px;padding-right:24px}
+  .mes .blocos,.set .blocos{max-width:720px;margin:0 auto}
+  .set .bloco + .bloco{margin-top:28px;padding-top:22px}
+  .set .note{margin:14px 0 0}
+  .set .btn.w{display:inline-block;width:auto;min-width:200px}
+}
+
+/* ————— computador: meses à esquerda; à direita o painel com o resumo do ciclo e a assistente ————— */
+.largo .app{
+  max-width:none;display:grid;grid-template-columns:minmax(0,1fr) 360px;
+  grid-template-rows:auto auto 1fr;align-items:start;
+}
+.largo .topbar{grid-column:1/-1;grid-row:1}
+.largo .hero{display:contents}
+.largo[data-aba="set"] .monthnav{display:none}
+/* troca de mês no meio da linha; os seletores e as cores ficam no canto direito
+   (a linha tem altura fixa: 30px de botão + 24px de folga + 1px de borda) */
+.largo .monthnav{
+  grid-column:1;grid-row:2;margin:0;padding:12px 24px;gap:6px;position:relative;
+  justify-content:center;border-bottom:1px solid var(--line);
+}
+.largo .monthnav h1{flex:none;min-width:300px;text-align:center}
+.largo #btnCores{position:absolute;right:24px;top:12px}
+.largo #viewSaldos{position:relative}
+.largo .colpick{position:absolute;right:64px;top:-42px;padding:0}
+.largo .qtdsel{display:inline-block;margin-right:6px}
+.largo .view{grid-column:1;grid-row:3;min-width:0}
+
+/* o painel da direita: resumo em cima, conversa embaixo ocupando o que sobra */
+.largo #heroSingle{
+  grid-column:2;grid-row:2/4;display:flex;flex-direction:column;
+  position:sticky;top:calc(var(--topbar-h) + env(safe-area-inset-top,0px));
+  height:calc(100vh - var(--topbar-h) - env(safe-area-inset-top,0px));
+  overflow-y:auto;padding:20px 22px 18px;
+  background:var(--surface);border-left:1px solid var(--line);
+}
+.largo #heroSingle .big{font-size:34px}
+.largo #heroSingle .plano{margin-top:12px}
+.largo #heroSingle .plano>.pl:first-child{border-top:1px solid var(--line-soft);padding-top:10px}
+.largo #heroSingle .plano .pl{padding:8px 0}
+.largo #heroSingle .sub{margin-top:6px}
+.largo .lateral-fechar{
+  display:grid;place-items:center;position:absolute;top:12px;right:12px;
+  width:30px;height:30px;border-radius:50%;color:var(--text-dim);
+}
+.largo .lateral-fechar:hover{background:var(--surface-2);color:var(--text)}
+.largo .lateral-fechar svg{width:16px;height:16px}
+.largo .ia-lateral{
+  display:flex;flex-direction:column;flex:1 1 auto;min-height:260px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+}
+.largo .ia-lateral .ia-msgs{flex:1 1 auto;max-height:none;min-height:0;margin-bottom:10px}
+.largo .ia-lateral .ia-msg{max-width:92%;font-size:13px}
+.largo .ia-lateral .ia-entrada{background:var(--bg)}
+.largo .ia-lateral .ia-campo input{font-size:14px;padding:9px 11px}
+.largo .ia-lateral .ia-campo input:disabled{opacity:.55}
+.largo .ia-lateral .ia-campo .btn{padding:9px 14px;font-size:13px}
+/* conta Google no pé do painel, como a conta do GitHub no VS Code; clicar abre o perfil */
+.largo .conta-lateral:not([hidden]){
+  display:flex;align-items:center;gap:10px;flex:none;width:100%;text-align:left;
+  margin-top:12px;padding:10px 8px;border-top:1px solid var(--line);border-radius:10px;
+  transition:background-color .15s ease;
+}
+.largo .conta-lateral:hover{background:var(--surface-2)}
+.largo .conta-lateral .avatar{width:30px;height:30px;font-size:13px}
+.largo .conta-lateral .d{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.largo .conta-lateral .d small{display:block;font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis}
+
+/* botão do topo que mostra e esconde o painel (a IA mora nele, então o botão "IA" sai) */
+.largo #btnIA{display:none}
+.largo .lateral-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid rgba(244,239,227,.3);border-radius:99px;
+  padding:6px 12px 6px 9px;font-size:13px;color:var(--chrome-text);
+}
+.largo .lateral-btn:hover{border-color:rgba(244,239,227,.65)}
+.largo .lateral-btn[aria-pressed="true"]{background:rgba(244,239,227,.13);border-color:transparent}
+.largo .lateral-btn svg{width:16px;height:16px}
+
+/* painel escondido: os meses ocupam a tela inteira */
+.largo.semlateral .app{grid-template-columns:minmax(0,1fr)}
+.largo.semlateral #heroSingle{display:none}
+
+@media (max-width:1365px){
+  .largo .app{grid-template-columns:minmax(0,1fr) 320px}
+  .largo #heroSingle{padding:18px 18px 16px}
+  .largo #heroSingle .big{font-size:30px}
+}
+
+/* "mostrar tudo": as cinco colunas da planilha (dia, entrada, saída, diário, saldo) */
+.largo table[data-col="tudo"] th:first-child{width:16%}
+.largo table[data-col="tudo"] th:last-child{width:24%}
+
+/* painel estreito (4 ou 5 meses): o selo do salário vira bolinha e a folga encolhe */
+.largo .estreito .pagflag,.largo table[data-col="tudo"] .pagflag{
+  display:inline-block;font-size:0;padding:0;width:7px;height:7px;border-radius:50%;
+  margin-left:6px;vertical-align:2px;
+}
+.largo .estreito .painel-head{padding:0 8px}
+.largo .estreito .painel-anot{font-size:0}
+.largo .estreito .painel-anot::before{margin-right:0}
+.largo .estreito .painel-mes{font-size:14px}
+.largo .estreito .painel-fim{font-size:12.5px}
+.largo .estreito .ledger th:first-child,.largo .estreito .ledger td:first-child>span{padding-left:8px}
+.largo .estreito .ledger th:last-child,.largo .estreito .ledger td.saldo>span{padding-right:8px}
+.largo .estreito .tick{margin-right:5px}
+
+@media (min-width:1680px){
+  .largo #heroSingle{padding:28px 28px 34px}
+}
