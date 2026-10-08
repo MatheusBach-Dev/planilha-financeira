@@ -1,8 +1,8 @@
 # planilha-financeira
 
-## Assistente de IA
+## Alice, a assistente de IA
 
-O botão **IA** no topo abre um chat que lança, edita e apaga lançamentos e responde perguntas sobre o mês ("gastei 32 no almoço", "quanto foi de mercado este mês?", "apaga o uber de ontem"). Salário, contas fixas e configurações ficam de fora de propósito. Apagar e editar sempre pedem confirmação; lançar mostra um botão de desfazer.
+O botão **Alice** no topo (no computador, o painel da direita) abre um chat com a Alice, que lança, edita e apaga lançamentos e responde perguntas sobre o mês ("gastei 32 no almoço", "quanto foi de mercado este mês?", "apaga o uber de ontem"). Salário, contas fixas e configurações ficam de fora de propósito. Apagar e editar sempre pedem confirmação; lançar mostra um botão de desfazer.
 
 Usa o plano grátis do [Groq](https://console.groq.com). Cada mensagem gasta um pedido só (dois quando a pergunta é sobre um mês que não está na tela).
 

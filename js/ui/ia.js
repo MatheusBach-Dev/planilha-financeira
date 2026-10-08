@@ -29,14 +29,14 @@ var HISTORICO=8;
 var conversa={uid:null,itens:[],enviando:false};
 
 function dica(){
-  return (vozSuportada()?"Escreva ou fale":"Escreva")+" do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. "+
+  return (vozSuportada()?"Escreva ou fale":"Escreva")+" com a Alice do seu jeito: “gastei 32 no almoço”, “quanto foi de mercado este mês?”, “apaga o uber de ontem”. "+
     "Ela só mexe nos lançamentos. Salário e contas fixas continuam no perfil.";
 }
 
 // texto e microfone na mesma caixa; enquanto grava, a caixa vira a faixa com o relógio e a onda
 function campo(){
   return '<div class="ia-campo"><div class="ia-entrada">'+
-      '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="'+(vozSuportada()?"Escreva ou fale…":"Escreva aqui…")+'" aria-label="Mensagem para a assistente">'+
+      '<input id="iaTexto" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" placeholder="'+(vozSuportada()?"Escreva ou fale…":"Escreva aqui…")+'" aria-label="Mensagem para a Alice">'+
       micHTML()+
     '</div><button class="btn" id="iaEnviar">Enviar</button></div>'+notaVozHTML();
 }
@@ -56,7 +56,7 @@ export function montarLateral(){
   if(!box.firstChild){
     var naFolha=$("iaMsgs");
     if(naFolha&&sheet.contains(naFolha))fecharSheet();
-    box.innerHTML='<div class="ia-topo"><b>assistente</b><button class="linkish" id="iaLimpar">nova conversa</button></div>'+
+    box.innerHTML='<div class="ia-topo"><b>Alice</b><button class="linkish" id="iaLimpar">nova conversa</button></div>'+
       '<div class="ia-msgs" id="iaMsgs" data-lateral="1" aria-live="polite"></div>'+campo();
   }
   renderConversa();
@@ -68,12 +68,12 @@ export function abrirIA(){
     var t=$("iaTexto");if(t)t.focus();
     return;
   }
-  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+  if(!iaDisponivel())return toast("Entre com sua conta Google pra falar com a Alice.");
   conversaDoUsuario();
   var lat=$("iaLateral");
   if(lat)lat.innerHTML="";
   abrirSheet(
-    '<h3>assistente</h3>'+
+    '<h3>Alice</h3>'+
     '<p class="sh-sub">'+dica()+'</p>'+
     '<div class="ia-msgs" id="iaMsgs" aria-live="polite"></div>'+campo()+
     '<button class="linkish" id="iaLimpar">começar outra conversa</button>'
@@ -87,7 +87,7 @@ export function enviarIA(){
   if(!t||conversa.enviando)return;
   var texto=t.value.trim();
   if(!texto)return;
-  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+  if(!iaDisponivel())return toast("Entre com sua conta Google pra falar com a Alice.");
   if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
   t.value="";
   limparNotaVoz();
@@ -99,7 +99,7 @@ export function enviarIA(){
 // daí segue igual a uma mensagem escrita.
 export function enviarAudioIA(audio,info){
   if(conversa.enviando)return;
-  if(!iaDisponivel())return toast("Entre com sua conta Google pra usar a assistente.");
+  if(!iaDisponivel())return toast("Entre com sua conta Google pra falar com a Alice.");
   if(sessao.readOnly)return toast("Você tem acesso só de leitura aqui.");
   conversaDoUsuario();
   var c=conversa,it={de:"eu",texto:"",voz:{segundos:info.segundos,onda:info.onda},ouvindo:true};
@@ -265,18 +265,18 @@ function textoAcao(it){
 
 function mensagemErro(e){
   var c=e&&e.codigo;
-  if(c==="limite")return "A IA chegou no limite grátis por agora. Tente de novo em "+tempo(e.espera)+
+  if(c==="limite")return "A Alice chegou no limite grátis por agora. Tente de novo em "+tempo(e.espera)+
     ". O botão + adicionar continua funcionando.";
-  if(c==="sem_chave")return "A assistente ainda não está configurada: falta a chave GROQ_API_KEY na Vercel.";
+  if(c==="sem_chave")return "A Alice ainda não está configurada: falta a chave GROQ_API_KEY na Vercel.";
   if(c==="chave_invalida")return "O Groq não aceitou a chave GROQ_API_KEY que está na Vercel. Confira se ela foi copiada inteira ou crie outra.";
   if(c==="login")return "Sua sessão expirou. Saia e entre de novo.";
-  if(c==="sem_acesso")return "Sua conta não está liberada pra usar a assistente (veja IA_EMAILS na Vercel).";
+  if(c==="sem_acesso")return "Sua conta não está liberada pra falar com a Alice (veja IA_EMAILS na Vercel).";
   if(c==="nao_entendi")return "Não entendi direito. Pode dizer de outro jeito?";
   if(c==="grande")return "A conversa ficou grande demais pro plano grátis. Toque em “começar outra conversa” e tente de novo.";
-  if(c==="sem_servidor")return "O servidor da IA não existe neste endereço ("+e.detalhe+"). Ela só funciona no site publicado na Vercel, não em prévia local.";
+  if(c==="sem_servidor")return "O servidor da Alice não existe neste endereço ("+e.detalhe+"). Ela só funciona no site publicado na Vercel, não em prévia local.";
   if(c==="recusado")return "O Groq recusou o pedido com o modelo "+e.modelo+" ("+e.detalhe+"). Se você trocou o GROQ_MODEL na Vercel, apague essa variável ou volte para openai/gpt-oss-120b e faça um novo deploy.";
   if(c==="rede")return "Sem conexão com a internet agora. Tente de novo daqui a pouco.";
-  return "Não consegui falar com a IA agora"+(c||e&&e.detalhe?" (erro: "+[c,e.detalhe].filter(Boolean).join(" · ")+")":"")+
+  return "Não consegui falar com a Alice agora"+(c||e&&e.detalhe?" (erro: "+[c,e.detalhe].filter(Boolean).join(" · ")+")":"")+
     ". Tente de novo daqui a pouco.";
 }
 
@@ -415,7 +415,7 @@ function renderConversa(){
   }).join("");
   if(conversa.enviando&&!ouvindo)h+='<div class="ia-msg pensando" role="status" aria-label="pensando"><i></i><i></i><i></i></div>';
   var lateral=!!box.dataset.lateral,pode=iaDisponivel();
-  if(lateral&&!h)h='<p class="ia-dica">'+esc(pode?dica():"Entre com sua conta Google pra conversar com a assistente.")+'</p>';
+  if(lateral&&!h)h='<p class="ia-dica">'+esc(pode?dica():"Entre com sua conta Google pra conversar com a Alice.")+'</p>';
   box.innerHTML=h;
   box.hidden=!h;
   box.scrollTop=box.scrollHeight;

@@ -37,7 +37,7 @@ export function micHTML(){
       '<span class="voz-tempo" id="vozTempo">0:00</span>'+
       '<span class="voz-onda" id="vozOnda" aria-hidden="true">'+barras(BARRAS)+'</span>'+
     '</div>'+
-    '<button type="button" class="ia-mic" id="iaMic" aria-pressed="false" aria-label="Falar com a assistente" title="Falar: toque ou segure">'+ICONE_MIC+'</button>';
+    '<button type="button" class="ia-mic" id="iaMic" aria-pressed="false" aria-label="Falar com a Alice" title="Falar: toque ou segure">'+ICONE_MIC+'</button>';
 }
 
 // linha de ajuda embaixo do campo (como usar enquanto grava, ou o que deu errado)
@@ -97,7 +97,7 @@ function soltou(){
 }
 
 function comecar(){
-  if(!iaDisponivel()){v.segurando=false;return toast("Entre com sua conta Google pra usar a assistente.")}
+  if(!iaDisponivel()){v.segurando=false;return toast("Entre com sua conta Google pra falar com a Alice.")}
   if(sessao.readOnly){v.segurando=false;return toast("Você tem acesso só de leitura aqui.")}
   var tentativa={};
   v={estado:"pedindo",segurando:v.segurando,tentativa:tentativa,niveis:[],historico:[]};
@@ -221,7 +221,7 @@ function pintar(){
   campo.classList.toggle("pedindo",v.estado==="pedindo");
   faixa.hidden=v.estado!=="gravando";
   mic.setAttribute("aria-pressed",ativo?"true":"false");
-  mic.setAttribute("aria-label",ativo?"Parar e enviar o áudio":"Falar com a assistente");
+  mic.setAttribute("aria-label",ativo?"Parar e enviar o áudio":"Falar com a Alice");
   mic.title=ativo?"Parar e enviar":"Falar: toque ou segure";
   if(!ativo){
     mic.style.removeProperty("--nivel");
