@@ -54,6 +54,7 @@ table.ledger{width:100%;table-layout:fixed;border-collapse:collapse;font-variant
 .acima{color:var(--neg-deep);font-weight:500}
 .ref{opacity:.38}
 .ref.abatido{opacity:.6;color:var(--neg-deep)}
+.ref.somado{opacity:.75;color:var(--pos-deep)}
 .saldo{transition:background-color .5s ease}
 .saldo>span{transition:color .5s ease}
 tr.hoje .c-dia>span{font-weight:600;color:var(--text)}

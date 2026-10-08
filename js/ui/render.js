@@ -128,6 +128,7 @@ export function renderPlano(p,ciclo){
       (p.passou>0?'. Passou '+money(p.passou)+', que sai da diária de amanhã.':'.')+'</div>');
   }
   if(p.motivo)l.push('<div class="motivo">'+esc(p.motivo)+'</div>');
+  if(p.dica)l.push('<div class="motivo neutro">'+esc(p.dica)+'</div>');
   l.push('<div class="pl"><span>limite de hoje</span><b>'+money(p.diaria)+'</b></div>');
   if(Math.abs(p.base-p.diaria)>0.005)
     l.push('<div class="pl"><span>sua diária normal</span><b>'+money(p.base)+'</b></div>');
@@ -136,11 +137,13 @@ export function renderPlano(p,ciclo){
       (p.metaBatida
         ? '<span class="feito">'+money(p.guardar)+' ✓</span>'
         : money(p.faltaGuardar)+(p.jaGuardado>0?' <span class="feito">de '+money(p.guardar)+'</span>':''))+'</b></div>');
-    var okReserva=ciclo.saldoFim>=p.reserva-0.005;
-    l.push('<div class="pl '+(okReserva?"ok":"vermelho")+'"><span>fechar dia '+ciclo.fim.getDate()+
-      ' com pelo menos'+(p.pctR?" ("+p.pctR+"%)":"")+'</span><b>'+money(p.reserva)+'</b></div>');
-    if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(ciclo.saldoFim)+
-      ', ou seja, '+money(p.reserva-ciclo.saldoFim)+' abaixo da sua reserva.</div>');
+    if(p.reservaAtiva){
+      var okReserva=ciclo.saldoFim>=p.reserva-0.005;
+      l.push('<div class="pl '+(okReserva?"ok":"vermelho")+'"><span>fechar dia '+ciclo.fim.getDate()+
+        ' com pelo menos'+(p.pctR?" ("+p.pctR+"%)":"")+'</span><b>'+money(p.reserva)+'</b></div>');
+      if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(ciclo.saldoFim)+
+        ', ou seja, '+money(p.reserva-ciclo.saldoFim)+' abaixo da sua reserva.</div>');
+    }
   }
   l.push('<div class="pl"><span>já gastou nestes '+(ciclo.total-p.dias+1)+' dias</span><b>'+money(p.gasto)+'</b></div>');
   var ap=p.aperto,pv=p.preview;
