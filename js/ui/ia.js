@@ -1,7 +1,7 @@
 import {planoCiclo} from "../core/aperto.js";
 import {calcular, inicialDe} from "../core/calculo.js";
 import {infoCiclo} from "../core/ciclo.js";
-import {HOJE_DIA, HOJE_KEY, diasNoMes, fmtDia, hoje, key, parseKey} from "../core/datas.js";
+import {HOJE_DIA, HOJE_KEY, diasNoMes, fmtDia, hoje, hojeZero, key, maisDias, parseKey} from "../core/datas.js";
 import {mesLeitura, ui} from "../core/estado.js";
 import {$, DOW, MESES, esc, money} from "../core/formato.js";
 import {acharLancamento, adicionarLancamento, editarLancamento, removerLancamento} from "../core/lancamentos.js";
@@ -20,6 +20,7 @@ import {ICONE_MIC, duracao, limparNotaVoz, micHTML, notaVozHTML, ondaHTML, vozSu
 
 var TIPOS=["diario","saida","entrada","economia"];
 var NOME_TIPO={entrada:"entrada",saida:"saída",diario:"diário",economia:"investimento"};
+var DIA_SEMANA=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
 // O plano grátis aceita ~8 mil tokens por minuto, e o servidor corta o contexto em 12 mil caracteres.
 // A lista de lançamentos divide este espaço entre os meses; os totais sempre contam tudo.
 var ESPACO_LISTA=6000;
@@ -321,6 +322,7 @@ function mesesDoContexto(extras){
 
 function montarContexto(meses,refs){
   var l=["hoje: "+DOW[hoje.getDay()]+", "+HOJE_DIA+" de "+MESES[hoje.getMonth()]+" de "+hoje.getFullYear()+" ("+HOJE_KEY+")",
+         diasRecentes(hojeZero()),
          "mês aberto na tela: "+MESES[ui.atual.m]+" de "+ui.atual.y];
   var ciclo=resumoCiclo();
   if(ciclo)l.push(ciclo);
@@ -329,6 +331,16 @@ function montarContexto(meses,refs){
   var espaco=Math.floor(ESPACO_LISTA/meses.length);
   meses.forEach(function(k){l.push("");l=l.concat(contextoMes(k,refs,espaco))});
   return l.join("\n");
+}
+
+// "ontem", "anteontem" e os dias da semana já com o mês e o dia certos, pra IA não errar a virada do mês
+function diasRecentes(base){
+  var l=[];
+  for(var i=1;i<=6;i++){
+    var dt=maisDias(base,-i),nome=DIA_SEMANA[dt.getDay()];
+    l.push((i===1?"ontem ("+nome+")":i===2?"anteontem ("+nome+")":nome)+" = "+key(dt.getFullYear(),dt.getMonth())+" dia "+dt.getDate());
+  }
+  return "dias recentes: "+l.join("; ");
 }
 
 function resumoCiclo(){
