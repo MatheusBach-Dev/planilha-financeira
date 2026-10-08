@@ -33,6 +33,13 @@
   .sheet{padding-left:14px;padding-right:14px}
   .tabbar button{font-size:10px}
 }
+/* ————— celular estreito: aperta os espaços do topo pro nome caber inteiro ————— */
+@media (max-width:374px){
+  .topbar{gap:8px;padding-left:14px;padding-right:14px}
+  .brand{gap:7px}
+  .top-dir{gap:6px}
+  .checkin{gap:6px;padding:5px 10px 5px 5px}
+}
 @media (max-width:360px){
   .ledger td{font-size:12.5px}
   .ledger th:first-child{width:33%}

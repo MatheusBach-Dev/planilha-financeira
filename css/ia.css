@@ -1,13 +1,14 @@
 /* ————— assistente ————— */
 .top-dir{display:flex;align-items:center;gap:8px;flex:none}
+/* só o ícone, da altura do contador ao lado: o nome "Alice" aparece quando a conversa abre */
 .ia-btn{
-  display:flex;align-items:center;gap:5px;flex:none;
-  border:1px solid rgba(244,239,227,.3);border-radius:99px;
-  padding:5px 11px 5px 8px;font-size:12.5px;white-space:nowrap;
+  display:grid;place-items:center;flex:none;
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid rgba(244,239,227,.3);
 }
 .ia-btn:hover{border-color:rgba(244,239,227,.65)}
 .ia-btn[hidden]{display:none}
-.ia-btn svg{width:17px;height:17px;flex:none}
+.ia-btn svg{width:18px;height:18px}
 
 .ia-msgs{
   display:flex;flex-direction:column;gap:8px;
