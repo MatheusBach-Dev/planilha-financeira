@@ -1,4 +1,4 @@
-import {calcular, faltaMeta, inicialDe, pctReserva} from "./calculo.js";
+import {calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
 import {cicloDoDia, dadosDia, saldoNaData, somaNoIntervalo} from "./ciclo.js";
 import {chaveDia, difDias, hoje, hojeZero, key, maisDias} from "./datas.js";
 import {mesLeitura, state} from "./estado.js";
@@ -30,10 +30,11 @@ export function planoAperto(ciclo,ap){
   var N=Math.max(0,Math.min(D,difDias(refIni,apFim)+1));
   var sal=ciclo.salario||0;
   var reserva=sal*pctReserva()/100;
-  var falta=faltaMeta(sal,state.config.metaEconomia,somaNoIntervalo(ciclo.inicio,ciclo.fim).economia);
+  var pend=ciclo.devendo?pendencias():{total:0,economia:0};
+  var falta=faltaMeta(sal,state.config.metaEconomia,somaNoIntervalo(ciclo.inicio,ciclo.fim).economia+pend.economia);
   var amanha=maisDias(hj,1);
   var futuros=amanha<=ciclo.fim?somaNoIntervalo(amanha,ciclo.fim).diario:0;
-  var bruto=saldoNaData(ciclo.fim)+futuros;
+  var bruto=saldoNaData(ciclo.fim)+futuros-pend.total;
   var M=bruto-reserva-falta,nivel="ok",motivo="";
   if(M<=0){
     M=bruto-reserva;nivel="semInvestir";
@@ -102,6 +103,6 @@ export function planoCiclo(ciclo){
   return {salario:sal,guardar:guardar,reserva:reserva,jaGuardado:jaGuardado,pre:!!ciclo.pre,
           faltaGuardar:faltaGuardar,metaBatida:guardar>0&&faltaGuardar<=0,dias:ciclo.restantes,gasto:ciclo.mov.diario,
           diaria:hojeDiaria,base:base,atraso:atraso,sobraAcumulada:sobra,nivel:nivel,motivo:motivo,dica:dica,pctG:pctG,pctR:pctR,
-          reservaAtiva:!!state.config.usarReserva,
+          reservaAtiva:!!state.config.usarReserva,devendo:ciclo.devendo||0,atrasadas:ciclo.atrasadas||[],
           gastoHoje:gastoHoje,resta:resta,passou:passou,aperto:ap,noAperto:noAperto,preview:pv};
 }

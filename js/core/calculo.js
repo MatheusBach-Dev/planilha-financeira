@@ -1,4 +1,4 @@
-import {HOJE_DIA, HOJE_KEY, diasNoMes, key, mesAntes, nEsimoDiaUtil, parseKey, somaMes, ultimoDiaUtil} from "./datas.js";
+import {HOJE_DIA, HOJE_ISO, HOJE_KEY, diasNoMes, isoData, key, mesAntes, nEsimoDiaUtil, parseKey, somaMes, ultimoDiaUtil} from "./datas.js";
 import {mesLeitura, state, temDados} from "./estado.js";
 import {diaPagamento, mesExtenso, regraPagamento, temPagamento} from "./pagamento.js";
 
@@ -8,6 +8,7 @@ export function diaDoFixo(f,y,m){
   else if(r==="ultimoUtil")d=ultimoDiaUtil(y,m);
   else if(r==="pagamento")d=temPagamento()?diaPagamento(y,m):Math.min(dias,+f.dia||1);
   else if(r==="aposPagamento")d=temPagamento()?Math.min(dias,diaPagamento(y,m)+Math.max(0,+f.n||0)):Math.min(dias,+f.dia||1);
+  else if(r==="mes")d=dias; // sem dia certo: fica prevista pro último dia do mês até ser paga
   else d=Math.max(1,Math.min(dias,+f.dia||1));
   if(f.espera&&f.tipo!=="entrada"&&temPagamento()){
     var pag=diaPagamento(y,m);
@@ -22,6 +23,7 @@ export function textoRegraFixo(f){
   if(r==="ultimoUtil")return "último dia útil";
   if(r==="pagamento")return "no dia do salário";
   if(r==="aposPagamento")return (+f.n||0)+" dia"+((+f.n||0)===1?"":"s")+" após o salário";
+  if(r==="mes")return "todo mês, sem dia certo";
   return "dia "+(+f.dia||1);
 }
 
@@ -105,16 +107,85 @@ export function faltaMeta(sal,pct,feito){
   return alvo-feito;
 }
 
+// ————— check-in das contas fixas —————
+// Saídas e investimentos fixos ficam "a pagar" até a pessoa marcar "paguei". Venceu sem marcar:
+// não sai do saldo (o dinheiro ainda está na conta), mas entra no "devendo" e a diária separa o valor.
+// Contas que venceram antes desta data contam como pagas sozinhas.
+export var CHECKIN_DESDE="2026-10-01";
+
+export function pedeCheckin(f){return f.tipo==="saida"||f.tipo==="economia"}
+
+function pulado(d,f){return d.pulados.indexOf(f.id)>=0||(f.serie&&d.pulados.indexOf(f.serie)>=0)}
+
+// cada conta fixa de check-in no mês k, com status: "auto" (antes do check-in existir), "pago",
+// "vencida" (passou do vencimento sem pagar) ou "aberta" (ainda não venceu)
+export function contasDoMes(k){
+  var d=mesLeitura(k),pk=parseKey(k),out=[];
+  (state.config.fixos||[]).forEach(function(f){
+    if(!pedeCheckin(f)||!fixoAtivo(f,k)||pulado(d,f))return;
+    var venc=diaDoFixo(f,pk.y,pk.m),vIso=isoData(pk.y,pk.m,venc);
+    var chave=serieDoFixo(f),pg=d.pagos[chave]||null;
+    var status=vIso<CHECKIN_DESDE?"auto":pg?"pago":vIso<HOJE_ISO?"vencida":"aberta";
+    var nominal=diaDoFixo(Object.assign({},f,{espera:false}),pk.y,pk.m);
+    out.push({f:f,k:k,chave:chave,id:"fix:"+f.id,desc:f.desc,tipo:f.tipo,valor:+f.valor||0,cartao:!!f.cartao,
+              venc:venc,vencIso:vIso,adiadaDe:venc!==nominal&&f.regra!=="mes"?nominal:0,
+              semDia:f.regra==="mes",status:status,pago:pg});
+  });
+  return out;
+}
+
+export function vencidasDoMes(k){
+  return contasDoMes(k).filter(function(c){return c.status==="vencida"});
+}
+
+// dia sugerido pra "paguei": hoje, se ainda não venceu; o vencimento, se já passou
+export function dataPadraoPago(c){return c.vencIso<HOJE_ISO?c.vencIso:HOJE_ISO}
+
+var cachePend=null;
+
+// tudo o que venceu e não foi pago, do início do check-in até hoje
+export function pendencias(){
+  if(cachePend)return cachePend;
+  var ini=CHECKIN_DESDE.slice(0,7),menor=menorMesConhecido();
+  if(menor&&menor>ini)ini=menor;
+  var lista=[],total=0,economia=0,pk=parseKey(ini),k=ini,g=0;
+  while(k<=HOJE_KEY&&g++<240){
+    vencidasDoMes(k).forEach(function(v){
+      lista.push(v);total+=v.valor;
+      if(v.tipo==="economia")economia+=v.valor;
+    });
+    pk=somaMes(pk,1);k=key(pk.y,pk.m);
+  }
+  cachePend={total:total,economia:economia,lista:lista};
+  return cachePend;
+}
+
+function itemDaConta(c,dia,valor){
+  return {id:c.id,dia:dia,tipo:c.tipo,valor:valor,desc:c.desc,fixo:true,cartao:c.cartao,
+          adiadaDe:c.status==="pago"?0:c.adiadaDe,checkin:c.status,chave:c.chave,mesConta:c.k,
+          venc:c.venc,semDia:c.semDia,pagoEm:c.pago?c.pago.data:null};
+}
+
 export function fixosDoMes(k){
   var d=mesLeitura(k),out=[],pk=parseKey(k);
   (state.config.fixos||[]).forEach(function(f){
-    if(!fixoAtivo(f,k))return;
-    if(d.pulados.indexOf(f.id)>=0||(f.serie&&d.pulados.indexOf(f.serie)>=0))return;
+    if(pedeCheckin(f)||!fixoAtivo(f,k)||pulado(d,f))return;
     var dia=diaDoFixo(f,pk.y,pk.m);
     var nominal=diaDoFixo(Object.assign({},f,{espera:false}),pk.y,pk.m);
     out.push({id:"fix:"+f.id,dia:dia,tipo:f.tipo,valor:f.valor,desc:f.desc,
               fixo:true,cartao:!!f.cartao,adiadaDe:dia!==nominal?nominal:0});
   });
+  contasDoMes(k).forEach(function(c){
+    if(c.status==="auto"||c.status==="aberta")out.push(itemDaConta(c,c.venc,c.valor));
+    else if(c.status==="pago"&&c.pago.data.slice(0,7)===k)out.push(itemDaConta(c,+c.pago.data.slice(8),+c.pago.valor||0));
+  });
+  // contas de até 2 meses antes que foram pagas neste mês (pagou atrasado)
+  for(var i=1;i<=2;i++){
+    var a=somaMes(pk,-i);
+    contasDoMes(key(a.y,a.m)).forEach(function(c){
+      if(c.status==="pago"&&c.pago.data.slice(0,7)===k)out.push(itemDaConta(c,+c.pago.data.slice(8),+c.pago.valor||0));
+    });
+  }
   return out;
 }
 
@@ -130,11 +201,13 @@ export function calcular(k,inicial){
   var pk=parseKey(k),dias=diasNoMes(pk.y,pk.m),doc=mesLeitura(k);
   var lanc=doc.lancamentos.concat(fixosDoMes(k)).concat(pagamentoDoMes(k));
   var diaPag=diaPagamento(pk.y,pk.m);
-  var porDia={};
+  var porDia={},vencPorDia={},vencidas=vencidasDoMes(k);
   lanc.forEach(function(l){
     var d=Math.min(dias,Math.max(1,+l.dia||1));
     (porDia[d]=porDia[d]||[]).push(l);
   });
+  // vencidas sem pagar só aparecem no dia (em vermelho): não entram nas somas nem no saldo
+  vencidas.forEach(function(v){(vencPorDia[v.venc]=vencPorDia[v.venc]||[]).push(v)});
   var saldo=inicial,linhas=[],vazio=lanc.length===0;
   var conf=doc.conferidos||[];
   var tot={entrada:0,saida:0,diario:0,economia:0,cartao:0,marcados:conf.length,diasComGasto:0};
@@ -149,7 +222,7 @@ export function calcular(k,inicial){
     }
     saldo=saldo+e-s-ec-dr;
     linhas.push({dia:d,dow:new Date(pk.y,pk.m,d).getDay(),entrada:e,saida:s,economia:ec,
-                 diario:dr,conferido:conf.indexOf(d)>=0,saldo:saldo,itens:itens,
+                 diario:dr,conferido:conf.indexOf(d)>=0,saldo:saldo,itens:itens,vencidas:vencPorDia[d]||[],
                  pagamento:diaPag===d,seca:diaPag>0&&d<diaPag});
     tot.entrada+=e;tot.saida+=s;tot.economia+=ec;tot.cartao+=ct;tot.diario+=dr;
     if(dr>0)tot.diasComGasto++;
@@ -157,7 +230,7 @@ export function calcular(k,inicial){
   var restam=k<HOJE_KEY?0:(k===HOJE_KEY?dias-HOJE_DIA+1:dias);
   var decorridos=k<HOJE_KEY?dias:(k===HOJE_KEY?HOJE_DIA:0);
   var permitido=restam>0?saldo/restam:(inicial+tot.entrada-tot.saida-tot.economia)/dias;
-  return {linhas:linhas,total:tot,final:saldo,inicial:inicial,dias:dias,vazio:vazio,diaPag:diaPag,
+  return {linhas:linhas,total:tot,final:saldo,inicial:inicial,dias:dias,vazio:vazio,diaPag:diaPag,vencidas:vencidas,
           restam:restam,decorridos:decorridos,permitido:Math.max(0,permitido)};
 }
 
@@ -189,4 +262,4 @@ export function menorMesConhecido(){
   return ks[0]||null;
 }
 
-export function limparCache(){cacheInicial={}}
+export function limparCache(){cacheInicial={};cachePend=null}

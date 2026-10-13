@@ -6,7 +6,7 @@ import {toast} from "../ui/toast.js";
 export function salvarMes(k){
   var d=mesDoc(k);
   localSave();
-  var dados={lancamentos:d.lancamentos,conferidos:d.conferidos,pulados:d.pulados,rebases:d.rebases};
+  var dados={lancamentos:d.lancamentos,conferidos:d.conferidos,pulados:d.pulados,rebases:d.rebases,pagos:d.pagos};
   if(sessao.pronto&&sessao.usuarioId){
     sessao.api.fs.setDoc(sessao.api.fs.doc(sessao.fsdb,"users",sessao.usuarioId,"meses",k),dados).catch(erroEscrita);
     return;

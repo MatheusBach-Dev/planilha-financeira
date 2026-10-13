@@ -1,5 +1,5 @@
 import {apertoDoCiclo, planoAperto} from "./aperto.js";
-import {calcular, faltaMeta, inicialDe, pctReserva} from "./calculo.js";
+import {calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
 import {cent, chaveDia, hoje, hojeZero, key, maisDias, parseKey, somaMes} from "./datas.js";
 import {state, ui} from "./estado.js";
 import {diaPagamento, ehPagamento, primeiroPagamento, temPagamento, valorPagamento} from "./pagamento.js";
@@ -40,9 +40,12 @@ export function infoCiclo(){
   var restantes=Math.max(1,Math.round((fim-hj)/86400000)+1);
   var total=Math.round((fim-inicio)/86400000)+1;
   var mov=somaNoIntervalo(inicio,fim);
+  // contas vencidas sem pagar: o saldo da tabela não desconta, mas o que sobra de verdade sim
+  var pend=pendencias();
   return {inicio:inicio,fim:fim,proxPag:proxPag,saldoFim:saldoFim,restantes:restantes,
           total:total,naSeca:pre||hj.getDate()<pagMes,mov:mov,pre:pre,salario:salarioDoCiclo(inicio),
-          ateProxPag:Math.round((proxPag-hj)/86400000)};
+          ateProxPag:Math.round((proxPag-hj)/86400000),
+          devendo:pend.total,devendoEconomia:pend.economia,atrasadas:pend.lista,sobraFim:saldoFim-pend.total};
 }
 
 // último dia de pagamento até dt (inclusive), ou null se o salário ainda não começou
@@ -92,15 +95,18 @@ export function baseDoCiclo(inicio,fim){
   var sal=salarioDoCiclo(inicio);
   var reserva=sal*pctReserva()/100;
   var alvo=sal*Math.max(0,Math.min(100,+state.config.metaEconomia||0))/100;
-  var falta=faltaMeta(sal,state.config.metaEconomia,mov.economia);
+  // no ciclo de hoje, o que está vencido sem pagar sai da diária (a pessoa ainda vai pagar);
+  // investimento atrasado conta pra meta, pra não ser descontado duas vezes
+  var hj=hojeZero(),pend=hj>=inicio&&hj<=fim?pendencias():{total:0,economia:0};
+  var falta=faltaMeta(sal,state.config.metaEconomia,mov.economia+pend.economia);
   var dias=Math.round((fim-inicio)/86400000)+1;
-  var bruto=saldoAntes+mov.entrada-mov.saida-mov.economia;
+  var bruto=saldoAntes+mov.entrada-mov.saida-mov.economia-pend.total;
   var disponivel=bruto-falta-reserva;
   if(disponivel<=0)disponivel=bruto-reserva;
   if(disponivel<=0)disponivel=bruto;
   return {base:dias>0?Math.max(0,Math.floor(disponivel/dias*100)/100):0,dias:dias,disponivel:disponivel,
           reserva:reserva,investir:alvo,jaInvestido:mov.economia,faltaInvestir:falta,
-          inicio:inicio,fim:fim,gasto:mov.diario,salario:sal};
+          inicio:inicio,fim:fim,gasto:mov.diario,salario:sal,devendo:pend.total};
 }
 
 export var mapaDiaria={},cicloDoDia={};

@@ -43,7 +43,7 @@ export function localSave(){
   try{localStorage.setItem(chaveLocal(),JSON.stringify(state))}catch(e){}
 }
 
-export var MES_VAZIO={lancamentos:[],conferidos:[],pulados:[],rebases:[]};
+export var MES_VAZIO={lancamentos:[],conferidos:[],pulados:[],rebases:[],pagos:{}};
 
 export function mesLeitura(k){return state.meses[k]?mesDoc(k):MES_VAZIO}
 
@@ -53,6 +53,8 @@ export function mesDoc(k){
   if(!d.lancamentos)d.lancamentos=[];
   if(!d.pulados)d.pulados=[];
   if(!Array.isArray(d.rebases))d.rebases=[];
+  // contas fixas marcadas como pagas neste mês: {chave da conta: {data:"aaaa-mm-dd", valor}}
+  if(!d.pagos||typeof d.pagos!=="object"||Array.isArray(d.pagos))d.pagos={};
   if(!Array.isArray(d.conferidos)){
     d.conferidos=[];
     if(typeof d.checkin==="number"&&d.checkin>0){
@@ -63,4 +65,6 @@ export function mesDoc(k){
   return d;
 }
 
-export function temDados(d){return !!(d&&((d.lancamentos&&d.lancamentos.length)||(d.conferidos&&d.conferidos.length)))}
+export function temDados(d){
+  return !!(d&&((d.lancamentos&&d.lancamentos.length)||(d.conferidos&&d.conferidos.length)||
+                (d.pagos&&Object.keys(d.pagos).length)))}

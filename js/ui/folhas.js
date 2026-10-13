@@ -1,7 +1,7 @@
-import {calcular, candidatosSubst, fixoEncerrado, historicoAte, inicialDe, mesmoFixo, planoFixo, substPadrao, textoPeriodoFixo} from "../core/calculo.js";
+import {calcular, candidatosSubst, contasDoMes, dataPadraoPago, fixoEncerrado, historicoAte, inicialDe, mesmoFixo, planoFixo, substPadrao, textoPeriodoFixo} from "../core/calculo.js";
 import {dadosDia} from "../core/ciclo.js";
 import {COR_NEGATIVO, corPorPercentual} from "../core/cores.js";
-import {HOJE_DIA, HOJE_KEY, diasNoMes, key, mesAntes, parseKey} from "../core/datas.js";
+import {HOJE_DIA, HOJE_ISO, HOJE_KEY, diasNoMes, fmtDia, key, mesAntes, parseKey} from "../core/datas.js";
 import {mesDoc, state, ui} from "../core/estado.js";
 import {$, DOW, MESES, esc, money, num} from "../core/formato.js";
 import {explicaPagamento, mesExtenso, regraPagamento, valorPagamento} from "../core/pagamento.js";
@@ -37,9 +37,29 @@ export function abrirDia(dia,mk){
   var ordem={entrada:0,saida:1,diario:2,economia:3};
   var itens=l.itens.slice().sort(function(a,b){return (ordem[a.tipo]||0)-(ordem[b.tipo]||0)});
   var dd=dadosDia(pk.y,pk.m,dia);
-  var corpo=itens.length?itens.map(function(it){
+  // linha do check-in embaixo de cada conta fixa de saída/investimento
+  function acaoConta(it){
+    if(!it.checkin||it.checkin==="auto")return "";
+    var alvo=esc(it.mesConta+"|"+it.chave);
+    if(it.checkin==="pago")
+      return '<div class="conta-acao pago"><span>paga dia '+esc(fmtIso(it.pagoEm))+
+        (it.mesConta!==k?" · conta de "+MESES[parseKey(it.mesConta).m]:"")+'</span>'+
+        '<button class="ed" data-pagar="'+alvo+'">editar pagamento</button></div>';
+    return '<div class="conta-acao"><span>'+(it.semDia?"a pagar até o fim do mês":"a pagar · vence dia "+it.venc)+'</span>'+
+      '<button class="ed" data-pagar="'+alvo+'">paguei</button></div>';
+  }
+  var vencidas=l.vencidas.map(function(v){
+    return '<div class="item comconta"><i class="dot" style="background:var(--neg-deep)"></i><div class="d">'+esc(v.desc||"conta")+
+      '<small class="atrasada">'+rotuloTipo(v.tipo)+' · conta fixa · venceu dia '+v.venc+' e não foi paga</small></div>'+
+      '<b class="atrasada">'+money(v.valor)+'</b>'+
+      '<button class="rm off" data-del="'+esc(v.id)+'" data-mes="'+k+'">pular</button></div>'+
+      '<div class="conta-acao atrasada"><span>não sai do saldo até você marcar; a diária já separa esse valor</span>'+
+      '<button class="ed" data-pagar="'+esc(v.k+"|"+v.chave)+'">paguei</button></div>';
+  }).join("");
+  var corpo=vencidas+(itens.length?itens.map(function(it){
     var cor=it.tipo==="entrada"?"var(--pos-deep)":it.tipo==="saida"?"var(--neg-deep)":it.tipo==="economia"?"var(--text-dim)":"var(--sea)";
-    return '<div class="item"><i class="dot" style="background:'+cor+'"></i><div class="d">'+
+    var acao=acaoConta(it);
+    return '<div class="item'+(acao?" comconta":"")+'"><i class="dot" style="background:'+cor+'"></i><div class="d">'+
       esc(it.desc||it.tipo)+'<small>'+(it.cat?esc(it.cat)+" · ":"")+rotuloTipo(it.tipo)+(it.pagamento?" · recebimento automático":it.fixo?(" · conta fixa"+(it.adiadaDe?" · adiada do dia "+it.adiadaDe:"")):"")+(it.cartao?" · no cartão":"")+'</small></div>'+
       '<b>'+money(it.valor)+'</b>'+
       (it.pagamento
@@ -47,8 +67,8 @@ export function abrirDia(dia,mk){
         : it.fixo
           ? '<button class="ed" data-editfixo="'+esc(it.id.slice(4))+'">editar</button>'
           : '<button class="ed" data-editlanc="'+esc(it.id)+'" data-dia="'+dia+'" data-mes="'+k+'">editar</button>')+
-      '<button class="rm'+(it.fixo||it.pagamento?' off':'')+'" data-del="'+esc(it.id)+'" data-mes="'+k+'">remover</button></div>';
-  }).join(""):'<p class="empty">Nada lançado neste dia.</p>';
+      '<button class="rm'+(it.fixo||it.pagamento?' off':'')+'" data-del="'+esc(it.id)+'" data-mes="'+k+'">remover</button></div>'+acao;
+  }).join(""):(vencidas?"":'<p class="empty">Nada lançado neste dia.</p>'));
 
   abrirSheet(
     '<h3>dia '+dia+' de '+MESES[pk.m]+'</h3>'+
@@ -68,6 +88,36 @@ export function abrirDia(dia,mk){
       '<button class="btn" style="flex:1" data-toggledia="'+dia+'" data-mes="'+k+'">'+(l.conferido?"Desmarcar dia":"Marcar como anotado")+'</button>'+
     '</div>'+
     '<button class="linkish" data-ateaqui="'+dia+'" data-mes="'+k+'">marcar todos os dias até aqui</button>'
+  );
+}
+
+// "aaaa-mm-dd" → "2 de out"
+export function fmtIso(iso){
+  var p=String(iso||"").split("-");
+  return p.length===3?fmtDia(new Date(+p[0],+p[1]-1,+p[2])):"";
+}
+
+// janela do "paguei": dia e valor já vêm preenchidos e dá pra trocar os dois
+export function abrirPagarConta(k,chave){
+  var c=contasDoMes(k).filter(function(x){return x.chave===chave})[0];
+  if(!c)return;
+  fe.pagarConta={k:k,chave:chave,volta:fe.diaAberto};
+  var pk=parseKey(k),atrasou=!c.pago&&c.vencIso<HOJE_ISO;
+  abrirSheet(
+    '<h3>'+(c.pago?"pagamento de ":"paguei: ")+esc(c.desc||"conta")+'</h3>'+
+    '<p class="sh-sub">'+rotuloTipo(c.tipo)+' fixo de '+MESES[pk.m]+' · '+(c.semDia?"até o fim do mês":"vence dia "+c.venc)+' · '+money(c.valor)+'</p>'+
+    '<div class="row2">'+
+      '<label class="fld"><span>Dia do pagamento</span><input id="pgData" type="date" min="'+k+'-01" max="'+HOJE_ISO+'" value="'+
+        esc(c.pago?c.pago.data:dataPadraoPago(c))+'"></label>'+
+      '<label class="fld"><span>Valor pago</span><input id="pgVal" inputmode="numeric" data-money value="'+num(c.pago?c.pago.valor:c.valor)+'"></label>'+
+    '</div>'+
+    '<p class="sh-sub tipoDesc" style="margin-top:-6px">'+
+      (c.pago?"Corrija o dia ou o valor se precisar.":atrasou
+        ?"O dia já vem no vencimento, porque você está marcando depois dele. Se pagou atrasado, troque o dia."
+        :"O dia já vem em hoje. Se pagou em outro dia, troque.")+
+      ' Se pagou um valor diferente (juros, conta que variou), corrija aqui: muda só neste mês.</p>'+
+    '<button class="btn w" id="pgSalvar">'+(c.pago?"Salvar alterações":"Confirmar pagamento")+'</button>'+
+    (c.pago?'<button class="linkish" data-despagar="'+esc(k+"|"+chave)+'" style="color:var(--neg-deep)">desfazer pagamento</button>':"")
   );
 }
 
@@ -248,7 +298,7 @@ export function abrirNovoFixo(id){
     '<label class="fld"><span>Quando sai</span><select id="fRegra">'+
       op("fixo","Dia fixo do mês")+op("util","Nº dia útil do mês")+
       op("pagamento","No dia que o salário cai")+op("aposPagamento","Alguns dias depois do salário")+
-      op("ultimoUtil","Último dia útil")+
+      op("ultimoUtil","Último dia útil")+op("mes","Todo mês, sem dia certo")+
     '</select></label>'+
     '<label class="fld" id="fWrapN"><span id="fLblN">Dia do mês</span><input id="fN" type="number" min="1" max="31" value="'+nVal+'"></label>'+
     '<label class="chk"><input type="checkbox" id="fEspera"'+(!f||f.espera?" checked":"")+'> nunca antes do salário</label>'+
@@ -345,7 +395,7 @@ export function atualizaRegraFixo(){
   if(!sel)return;
   fe.fixoRegra=sel.value;
   var w=$("fWrapN"),lbl=$("fLblN"),inp=$("fN");
-  if(fe.fixoRegra==="pagamento"||fe.fixoRegra==="ultimoUtil"){w.style.display="none";return}
+  if(fe.fixoRegra==="pagamento"||fe.fixoRegra==="ultimoUtil"||fe.fixoRegra==="mes"){w.style.display="none";return}
   w.style.display="block";
   if(fe.fixoRegra==="util"){lbl.textContent="Qual dia útil";inp.max=23;if(+inp.value>23)inp.value=5}
   else if(fe.fixoRegra==="aposPagamento"){lbl.textContent="Quantos dias depois";inp.max=20;if(+inp.value>20)inp.value=2}

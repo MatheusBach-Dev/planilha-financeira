@@ -82,6 +82,11 @@ export var HOJE_KEY=key(hoje.getFullYear(),hoje.getMonth());
 
 export var HOJE_DIA=hoje.getDate();
 
+// "aaaa-mm-dd": dá pra comparar datas como texto
+export function isoData(y,m,d){return key(y,m)+"-"+pad(d)}
+
+export var HOJE_ISO=isoData(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+
 export function cent(v){return Math.round(v*100)/100}
 
 export function chaveDia(dt){return dt.getFullYear()+"-"+dt.getMonth()+"-"+dt.getDate()}
