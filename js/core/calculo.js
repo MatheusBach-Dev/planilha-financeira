@@ -109,7 +109,8 @@ export function faltaMeta(sal,pct,feito){
 
 // ————— check-in das contas fixas —————
 // Saídas e investimentos fixos ficam "a pagar" até a pessoa marcar "paguei". Venceu sem marcar:
-// não sai do saldo (o dinheiro ainda está na conta), mas entra no "devendo" e a diária separa o valor.
+// não sai do saldo (o dinheiro ainda está na conta) e entra no "devendo". A diária só desconta
+// a conta depois do "paguei". "Não vou pagar este mês" tira a conta do mês sem deixar vermelho.
 // Contas que venceram antes desta data contam como pagas sozinhas.
 export var CHECKIN_DESDE="2026-10-01";
 
@@ -117,15 +118,15 @@ export function pedeCheckin(f){return f.tipo==="saida"||f.tipo==="economia"}
 
 function pulado(d,f){return d.pulados.indexOf(f.id)>=0||(f.serie&&d.pulados.indexOf(f.serie)>=0)}
 
-// cada conta fixa de check-in no mês k, com status: "auto" (antes do check-in existir), "pago",
-// "vencida" (passou do vencimento sem pagar) ou "aberta" (ainda não venceu)
+// cada conta fixa de check-in no mês k, com status: "auto" (antes do check-in existir), "pulada"
+// ("não vou pagar este mês"), "pago", "vencida" (passou do vencimento sem pagar) ou "aberta" (ainda não venceu)
 export function contasDoMes(k){
   var d=mesLeitura(k),pk=parseKey(k),out=[];
   (state.config.fixos||[]).forEach(function(f){
-    if(!pedeCheckin(f)||!fixoAtivo(f,k)||pulado(d,f))return;
+    if(!pedeCheckin(f)||!fixoAtivo(f,k))return;
     var venc=diaDoFixo(f,pk.y,pk.m),vIso=isoData(pk.y,pk.m,venc);
     var chave=serieDoFixo(f),pg=d.pagos[chave]||null;
-    var status=vIso<CHECKIN_DESDE?"auto":pg?"pago":vIso<HOJE_ISO?"vencida":"aberta";
+    var status=pulado(d,f)?"pulada":vIso<CHECKIN_DESDE?"auto":pg?"pago":vIso<HOJE_ISO?"vencida":"aberta";
     var nominal=diaDoFixo(Object.assign({},f,{espera:false}),pk.y,pk.m);
     out.push({f:f,k:k,chave:chave,id:"fix:"+f.id,desc:f.desc,tipo:f.tipo,valor:+f.valor||0,cartao:!!f.cartao,
               venc:venc,vencIso:vIso,adiadaDe:venc!==nominal&&f.regra!=="mes"?nominal:0,
@@ -158,6 +159,18 @@ export function pendencias(){
   }
   cachePend={total:total,economia:economia,lista:lista};
   return cachePend;
+}
+
+// contas ainda não pagas que vencem entre a e b ("aaaa-mm-dd"), pra a diária não descontar antes do "paguei"
+export function abertasNoIntervalo(aIso,bIso){
+  var tot={saida:0,economia:0},pk=parseKey(aIso.slice(0,7)),k=aIso.slice(0,7),g=0;
+  while(k<=bIso.slice(0,7)&&g++<60){
+    contasDoMes(k).forEach(function(c){
+      if(c.status==="aberta"&&c.vencIso>=aIso&&c.vencIso<=bIso)tot[c.tipo]+=c.valor;
+    });
+    pk=somaMes(pk,1);k=key(pk.y,pk.m);
+  }
+  return tot;
 }
 
 function itemDaConta(c,dia,valor){
@@ -201,13 +214,16 @@ export function calcular(k,inicial){
   var pk=parseKey(k),dias=diasNoMes(pk.y,pk.m),doc=mesLeitura(k);
   var lanc=doc.lancamentos.concat(fixosDoMes(k)).concat(pagamentoDoMes(k));
   var diaPag=diaPagamento(pk.y,pk.m);
-  var porDia={},vencPorDia={},vencidas=vencidasDoMes(k);
+  var porDia={},vencPorDia={},pulPorDia={},contas=contasDoMes(k);
+  var vencidas=contas.filter(function(c){return c.status==="vencida"});
   lanc.forEach(function(l){
     var d=Math.min(dias,Math.max(1,+l.dia||1));
     (porDia[d]=porDia[d]||[]).push(l);
   });
-  // vencidas sem pagar só aparecem no dia (em vermelho): não entram nas somas nem no saldo
+  // vencidas sem pagar (vermelho) e puladas ("não vou pagar este mês") só aparecem no dia:
+  // não entram nas somas nem no saldo
   vencidas.forEach(function(v){(vencPorDia[v.venc]=vencPorDia[v.venc]||[]).push(v)});
+  contas.forEach(function(c){if(c.status==="pulada")(pulPorDia[c.venc]=pulPorDia[c.venc]||[]).push(c)});
   var saldo=inicial,linhas=[],vazio=lanc.length===0;
   var conf=doc.conferidos||[];
   var tot={entrada:0,saida:0,diario:0,economia:0,cartao:0,marcados:conf.length,diasComGasto:0};
@@ -222,7 +238,7 @@ export function calcular(k,inicial){
     }
     saldo=saldo+e-s-ec-dr;
     linhas.push({dia:d,dow:new Date(pk.y,pk.m,d).getDay(),entrada:e,saida:s,economia:ec,
-                 diario:dr,conferido:conf.indexOf(d)>=0,saldo:saldo,itens:itens,vencidas:vencPorDia[d]||[],
+                 diario:dr,conferido:conf.indexOf(d)>=0,saldo:saldo,itens:itens,vencidas:vencPorDia[d]||[],puladas:pulPorDia[d]||[],
                  pagamento:diaPag===d,seca:diaPag>0&&d<diaPag});
     tot.entrada+=e;tot.saida+=s;tot.economia+=ec;tot.cartao+=ct;tot.diario+=dr;
     if(dr>0)tot.diasComGasto++;

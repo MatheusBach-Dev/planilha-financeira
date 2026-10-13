@@ -45,20 +45,32 @@ export function abrirDia(dia,mk){
       return '<div class="conta-acao pago"><span>paga dia '+esc(fmtIso(it.pagoEm))+
         (it.mesConta!==k?" · conta de "+MESES[parseKey(it.mesConta).m]:"")+'</span>'+
         '<button class="ed" data-pagar="'+alvo+'">editar pagamento</button></div>';
-    return '<div class="conta-acao"><span>'+(it.semDia?"a pagar até o fim do mês":"a pagar · vence dia "+it.venc)+'</span>'+
-      '<button class="ed" data-pagar="'+alvo+'">paguei</button></div>';
+    return '<div class="conta-acao"><span>'+(it.semDia?"a pagar até o fim do mês":"a pagar · vence dia "+it.venc)+
+      ' · só sai da diária quando você pagar</span>'+
+      '<button class="ed" data-pagar="'+alvo+'">paguei</button>'+
+      '<button class="rm off" data-naopagar="'+alvo+'">não vou pagar este mês</button></div>';
   }
   var vencidas=l.vencidas.map(function(v){
+    var alvo=esc(v.k+"|"+v.chave);
     return '<div class="item comconta"><i class="dot" style="background:var(--neg-deep)"></i><div class="d">'+esc(v.desc||"conta")+
       '<small class="atrasada">'+rotuloTipo(v.tipo)+' · conta fixa · venceu dia '+v.venc+' e não foi paga</small></div>'+
-      '<b class="atrasada">'+money(v.valor)+'</b>'+
-      '<button class="rm off" data-del="'+esc(v.id)+'" data-mes="'+k+'">pular</button></div>'+
-      '<div class="conta-acao atrasada"><span>não sai do saldo até você marcar; a diária já separa esse valor</span>'+
-      '<button class="ed" data-pagar="'+esc(v.k+"|"+v.chave)+'">paguei</button></div>';
+      '<b class="atrasada">'+money(v.valor)+'</b></div>'+
+      '<div class="conta-acao atrasada"><span>não sai do saldo nem da diária até você marcar "paguei"</span>'+
+      '<button class="ed" data-pagar="'+alvo+'">paguei</button>'+
+      '<button class="rm off" data-naopagar="'+alvo+'">não vou pagar este mês</button></div>';
   }).join("");
-  var corpo=vencidas+(itens.length?itens.map(function(it){
+  // "não vou pagar este mês": fica cinza no dia, com desfazer
+  var puladas=l.puladas.map(function(p){
+    return '<div class="item comconta pulada"><i class="dot" style="background:var(--line)"></i><div class="d">'+esc(p.desc||"conta")+
+      '<small>'+rotuloTipo(p.tipo)+' · conta fixa · não vai pagar este mês</small></div>'+
+      '<b class="pulada">'+money(p.valor)+'</b></div>'+
+      '<div class="conta-acao pulada"><span>fora do saldo, da diária e do "devendo" neste mês</span>'+
+      '<button class="ed" data-voltarcobrar="'+esc(p.k+"|"+p.chave)+'">desfazer</button></div>';
+  }).join("");
+  var extras=vencidas+puladas;
+  var corpo=extras+(itens.length?itens.map(function(it){
     var cor=it.tipo==="entrada"?"var(--pos-deep)":it.tipo==="saida"?"var(--neg-deep)":it.tipo==="economia"?"var(--text-dim)":"var(--sea)";
-    var acao=acaoConta(it);
+    var acao=acaoConta(it),comCheckin=it.checkin&&it.checkin!=="auto";
     return '<div class="item'+(acao?" comconta":"")+'"><i class="dot" style="background:'+cor+'"></i><div class="d">'+
       esc(it.desc||it.tipo)+'<small>'+(it.cat?esc(it.cat)+" · ":"")+rotuloTipo(it.tipo)+(it.pagamento?" · recebimento automático":it.fixo?(" · conta fixa"+(it.adiadaDe?" · adiada do dia "+it.adiadaDe:"")):"")+(it.cartao?" · no cartão":"")+'</small></div>'+
       '<b>'+money(it.valor)+'</b>'+
@@ -67,8 +79,10 @@ export function abrirDia(dia,mk){
         : it.fixo
           ? '<button class="ed" data-editfixo="'+esc(it.id.slice(4))+'">editar</button>'
           : '<button class="ed" data-editlanc="'+esc(it.id)+'" data-dia="'+dia+'" data-mes="'+k+'">editar</button>')+
-      '<button class="rm'+(it.fixo||it.pagamento?' off':'')+'" data-del="'+esc(it.id)+'" data-mes="'+k+'">remover</button></div>'+acao;
-  }).join(""):(vencidas?"":'<p class="empty">Nada lançado neste dia.</p>'));
+      // conta com check-in não tem "remover": quem tira ela do mês é o "não vou pagar este mês"
+      (comCheckin?'':'<button class="rm'+(it.fixo||it.pagamento?' off':'')+'" data-del="'+esc(it.id)+'" data-mes="'+k+'">remover</button>')+
+      '</div>'+acao;
+  }).join(""):(extras?"":'<p class="empty">Nada lançado neste dia.</p>'));
 
   abrirSheet(
     '<h3>dia '+dia+' de '+MESES[pk.m]+'</h3>'+
@@ -105,7 +119,7 @@ export function abrirPagarConta(k,chave){
   var pk=parseKey(k),atrasou=!c.pago&&c.vencIso<HOJE_ISO;
   abrirSheet(
     '<h3>'+(c.pago?"pagamento de ":"paguei: ")+esc(c.desc||"conta")+'</h3>'+
-    '<p class="sh-sub">'+rotuloTipo(c.tipo)+' fixo de '+MESES[pk.m]+' · '+(c.semDia?"até o fim do mês":"vence dia "+c.venc)+' · '+money(c.valor)+'</p>'+
+    '<p class="sh-sub">'+rotuloTipo(c.tipo)+' · conta fixa de '+MESES[pk.m]+' · '+(c.semDia?"até o fim do mês":"vence dia "+c.venc)+' · '+money(c.valor)+'</p>'+
     '<div class="row2">'+
       '<label class="fld"><span>Dia do pagamento</span><input id="pgData" type="date" min="'+k+'-01" max="'+HOJE_ISO+'" value="'+
         esc(c.pago?c.pago.data:dataPadraoPago(c))+'"></label>'+
@@ -165,7 +179,7 @@ export function opcoesCat(tipo,sel){
   return out;
 }
 
-export function rotuloTipo(t){return t==="economia"?"investimento":t}
+export function rotuloTipo(t){return {economia:"investimento",saida:"saída",diario:"diário"}[t]||t}
 
 export function descTipo(t){
   if(t==="entrada")return "Dinheiro que chega fora do salário: freela, venda, devolução. O salário já entra sozinho pela regra de recebimento.";

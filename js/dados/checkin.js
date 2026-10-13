@@ -29,9 +29,39 @@ export function marcarPaga(k,chave,data,valor){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(String(data||"")))return {ok:false,msg:"Escolha o dia do pagamento."};
   if(data>HOJE_ISO)return {ok:false,msg:"O dia do pagamento não pode ser depois de hoje."};
   if(data.slice(0,7)<k)return {ok:false,msg:"O pagamento não pode ser antes do mês da conta."};
-  mesDoc(k).pagos[chave]={data:data,valor:v};
+  var d=mesDoc(k);
+  d.pagos[chave]={data:data,valor:v};
+  tirarPulo(d,c);
   salvarMes(k);
   return {ok:true,msg:(c.desc||"Conta")+" paga: "+money(v)+"."};
+}
+
+// o "pular" antigo guardava o id do pedaço da conta; o novo guarda a chave (série). Tira os dois.
+function tirarPulo(d,c){
+  d.pulados=d.pulados.filter(function(x){return x!==c.chave&&x!==c.f.id});
+}
+
+// "não vou pagar este mês": a conta sai do mês sem ficar vermelha e sem entrar no "devendo"
+export function naoVouPagar(k,chave){
+  if(sessao.readOnly)return SO_LEITURA;
+  var c=acharConta(k,chave);
+  if(!c)return {ok:false,msg:"Essa conta não existe mais neste mês."};
+  var d=mesDoc(k);
+  delete d.pagos[chave];
+  tirarPulo(d,c);
+  d.pulados.push(chave);
+  salvarMes(k);
+  return {ok:true,msg:(c.desc||"Conta")+": não vai pagar este mês."};
+}
+
+export function voltarACobrar(k,chave){
+  if(sessao.readOnly)return SO_LEITURA;
+  var c=acharConta(k,chave);
+  if(!c)return {ok:false,msg:"Essa conta não existe mais neste mês."};
+  var d=mesDoc(k);
+  tirarPulo(d,c);
+  salvarMes(k);
+  return {ok:true,msg:(c.desc||"Conta")+" voltou a contar neste mês."};
 }
 
 export function desmarcarPaga(k,chave){
