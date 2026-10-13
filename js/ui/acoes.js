@@ -6,6 +6,7 @@ import {localSave, mesDoc, padraoConfig, state, ui} from "../core/estado.js";
 import {$, money, uid} from "../core/formato.js";
 import {adicionarLancamento, editarLancamento, removerLancamento} from "../core/lancamentos.js";
 import {mesExtenso} from "../core/pagamento.js";
+import {desmarcarPaga, marcarPaga} from "../dados/checkin.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {abrirDia, fe, fecharSheet, lerFormFixo} from "./folhas.js";
@@ -260,4 +261,28 @@ export function limpar(){
     salvarConfig();
   }
   render();toast("Tudo limpo.");
+}
+
+// ————— "paguei" das contas fixas —————
+
+// depois de salvar, volta pra janela do dia de onde veio (se veio de uma)
+function voltarDoPagamento(volta){
+  if(volta)abrirDia(volta.dia,volta.k);else fecharSheet();
+}
+
+export function salvarPagoConta(){
+  var p=fe.pagarConta;
+  if(!p)return;
+  var r=marcarPaga(p.k,p.chave,$("pgData").value,lerMoney($("pgVal")));
+  if(!r.ok)return toast(r.msg);
+  fe.pagarConta=null;
+  render();voltarDoPagamento(p.volta);toast(r.msg);
+}
+
+export function desfazerPagoConta(k,chave){
+  var volta=fe.pagarConta?fe.pagarConta.volta:fe.diaAberto;
+  var r=desmarcarPaga(k,chave);
+  if(!r.ok)return toast(r.msg);
+  fe.pagarConta=null;
+  render();voltarDoPagamento(volta);toast(r.msg);
 }

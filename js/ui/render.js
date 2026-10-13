@@ -69,8 +69,9 @@ export function render(){
     $("heroLead").textContent=ciclo.naSeca
       ? "vivendo da sobra até o salário cair"
       : "até o próximo pagamento você tem";
-    hn.textContent=money(ciclo.saldoFim);
-    hn.classList.toggle("neg",ciclo.saldoFim<0);
+    var sobra=ciclo.sobraFim!=null?ciclo.sobraFim:ciclo.saldoFim;
+    hn.textContent=money(sobra);
+    hn.classList.toggle("neg",sobra<0);
     sub.push("ciclo de "+fmtDia(ciclo.inicio)+" a "+fmtDia(ciclo.fim)+", "+ciclo.total+" dias");
     sub.push("salário cai "+fmtDiaSem(ciclo.proxPag)+(ciclo.ateProxPag>0?(" · em "+ciclo.ateProxPag+" dia"+(ciclo.ateProxPag>1?"s":"")):""));
   }else{
@@ -121,6 +122,13 @@ export function fixoDuplicado(){
 
 export function renderPlano(p,ciclo){
   var l=[],nv=p.passou>0?"vermelho":(p.resta<=0?"vermelho":p.nivel);
+  // contas que venceram sem "paguei": o dinheiro ainda está na conta, mas já tem dono
+  if(ciclo.devendo>0.005){
+    var nAtr=(ciclo.atrasadas||[]).length;
+    l.push('<div class="pl devendo"><span>devendo em '+nAtr+' conta'+(nAtr===1?'':'s')+' atrasada'+(nAtr===1?'':'s')+'</span><b>'+money(ciclo.devendo)+'</b></div>'+
+      '<div class="motivo neutro">'+esc((ciclo.atrasadas||[]).map(function(a){return (a.desc||"conta")+" (venceu dia "+a.venc+")"}).join(", "))+
+      '. O valor ainda está na sua conta, mas o número de cima e a diária já separam ele. Marque “paguei” quando pagar.</div>');
+  }
   l.push('<div class="pl destaque '+nv+'"><span>ainda dá pra gastar hoje</span><b>'+money(p.resta)+'</b></div>');
   if(p.gastoHoje>0){
     l.push('<div class="motivo'+(p.passou>0?'':' neutro')+'">Você já gastou '+money(p.gastoHoje)+
@@ -138,11 +146,12 @@ export function renderPlano(p,ciclo){
         ? '<span class="feito">'+money(p.guardar)+' ✓</span>'
         : money(p.faltaGuardar)+(p.jaGuardado>0?' <span class="feito">de '+money(p.guardar)+'</span>':''))+'</b></div>');
     if(p.reservaAtiva){
-      var okReserva=ciclo.saldoFim>=p.reserva-0.005;
+      var sobraFim=ciclo.sobraFim!=null?ciclo.sobraFim:ciclo.saldoFim;
+      var okReserva=sobraFim>=p.reserva-0.005;
       l.push('<div class="pl '+(okReserva?"ok":"vermelho")+'"><span>fechar dia '+ciclo.fim.getDate()+
         ' com pelo menos'+(p.pctR?" ("+p.pctR+"%)":"")+'</span><b>'+money(p.reserva)+'</b></div>');
-      if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(ciclo.saldoFim)+
-        ', ou seja, '+money(p.reserva-ciclo.saldoFim)+' abaixo da sua reserva.</div>');
+      if(!okReserva)l.push('<div class="motivo">Nesse ritmo você fecha o ciclo com '+money(sobraFim)+
+        ', ou seja, '+money(p.reserva-sobraFim)+' abaixo da sua reserva.</div>');
     }
   }
   l.push('<div class="pl"><span>já gastou nestes '+(ciclo.total-p.dias+1)+' dias</span><b>'+money(p.gasto)+'</b></div>');

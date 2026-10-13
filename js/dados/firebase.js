@@ -106,7 +106,8 @@ export function assinarFirestore(){
       remoto[d.id]={lancamentos:(x.lancamentos||[]).slice(),
                     conferidos:(x.conferidos||[]).slice(),
                     pulados:(x.pulados||[]).slice(),
-                    rebases:(x.rebases||[]).slice()};
+                    rebases:(x.rebases||[]).slice(),
+                    pagos:Object.assign({},x.pagos||{})};
     });
     if(!sessao.syncMeses){
       sessao.syncMeses=true;

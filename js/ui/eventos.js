@@ -2,8 +2,8 @@ import {state, ui} from "../core/estado.js";
 import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {apagarFixo, aplicarAperto, desfazerAperto, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, setTab} from "./acoes.js";
-import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
+import {apagarFixo, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, setTab} from "./acoes.js";
+import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, abrirPagarConta, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {cliqueInvestir, mudancaInvestir} from "./investir.js";
@@ -57,7 +57,14 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
   
     var del=e.target.closest("[data-del]");
     if(del)return remover(del.dataset.del,del.dataset.mes);
-  
+
+    // "paguei" das contas fixas: data-pagar/data-despagar = "mês da conta|chave da conta"
+    var pgc=e.target.closest("[data-pagar]");
+    if(pgc){var a=pgc.dataset.pagar.split("|");return abrirPagarConta(a[0],a[1])}
+    var dpc=e.target.closest("[data-despagar]");
+    if(dpc){var b=dpc.dataset.despagar.split("|");return desfazerPagoConta(b[0],b[1])}
+    if(e.target.closest("#pgSalvar"))return salvarPagoConta();
+
     var df=e.target.closest("[data-delfixo]");
     if(df)return removerFixo(df.dataset.delfixo);
     var af=e.target.closest("[data-apagarfixo]");

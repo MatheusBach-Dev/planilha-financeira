@@ -72,7 +72,9 @@ export function custoMensal(){
   for(var i=1;i<=2;i++){var a=somaMes(pk,-i),k=key(a.y,a.m);if(k<inicio)break;ks.push(k)}
   var meses={};
   ks.forEach(function(k){meses[k]=calcular(k,inicialDe(k))});
-  var saidas=ks.reduce(function(s,k){return s+meses[k].total.saida},0)/ks.length;
+  // conta vencida sem pagar não sai do saldo, mas continua sendo custo do mês
+  function atrasadas(r){return r.vencidas.reduce(function(s,v){return s+(v.tipo==="saida"?v.valor:0)},0)}
+  var saidas=ks.reduce(function(s,k){return s+meses[k].total.saida+atrasadas(meses[k])},0)/ks.length;
 
   var hj=hojeZero(),limite=maisDias(hj,-90),soma=0,dias=0;
   for(var dt=maisDias(hj,-1);dt>=limite;dt=maisDias(dt,-1)){
@@ -99,7 +101,8 @@ export function saudePlanilha(){
                 motivos:["Cadastre seu salário em perfil pra o app acompanhar o seu ciclo."]};
   var hj=hojeZero(),sal=c.salario;
   var reserva=sal*pctReserva()/100;
-  var falta=faltaMeta(sal,state.config.metaEconomia,c.mov.economia);
+  // investimento atrasado já entra no aviso de contas atrasadas
+  var falta=faltaMeta(sal,state.config.metaEconomia,c.mov.economia+(c.devendoEconomia||0));
   var negativoEm=null,saldoHoje=0,pk={y:hj.getFullYear(),m:hj.getMonth()};
   for(var g=0;g<3&&!negativoEm;g++){
     var k=key(pk.y,pk.m),r=calcular(k,inicialDe(k));
@@ -115,10 +118,11 @@ export function saudePlanilha(){
   }
   var fr=saldoHoje<0?0:fracaoCor(saldoHoje,valorPagamento(hj.getFullYear(),hj.getMonth()),hj.getFullYear(),hj.getMonth(),hj.getDate());
   var nivel=saldoHoje<0?"vermelho":fr>=0.78?"verde":fr>=0.58?"amarelo":fr>=0.38?"laranja":"vermelho";
-  var motivos=[];
+  var motivos=[],sobra=c.saldoFim-(c.devendo||0);
+  if(c.devendo>0.005)motivos.push("Você tem "+money(c.devendo)+" em contas atrasadas pra pagar.");
   if(negativoEm)motivos.push("O saldo fica negativo em "+fmtDia(negativoEm)+".");
-  else if(c.saldoFim<reserva-0.005)
-    motivos.push("Você fecha o ciclo com "+money(c.saldoFim)+", abaixo da reserva mínima de "+money(reserva)+".");
+  else if(sobra<reserva-0.005)
+    motivos.push("Você fecha o ciclo com "+money(sobra)+", abaixo da reserva mínima de "+money(reserva)+".");
   if(falta>0.005)motivos.push("Falta investir "+money(falta)+" pra bater a meta deste ciclo.");
   return {nivel:nivel,fracao:fr,emDia:!motivos.length,motivos:motivos,saldoFim:c.saldoFim,reserva:reserva,
           faltaInvestir:falta,negativoEm:negativoEm};
@@ -169,7 +173,8 @@ function faixaDaRenda(renda){
 // o ciclo que o salário paga: o atual, ou o primeiro se o salário ainda não caiu
 function cicloDoSalario(){
   var c=infoCiclo();
-  if(c&&c.salario)return {inicio:c.inicio,fim:c.fim,economia:c.mov.economia};
+  // investimento atrasado (ainda não marcado como pago) continua sendo o que a pessoa pretende guardar
+  if(c&&c.salario)return {inicio:c.inicio,fim:c.fim,economia:c.mov.economia+(c.devendoEconomia||0)};
   var p=proxPagamentoDepois(hojeZero());
   if(!p)return null;
   var q=proxPagamentoDepois(p),fim=q?maisDias(q,-1):maisDias(p,29);
