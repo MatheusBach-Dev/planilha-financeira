@@ -9,7 +9,7 @@ import {ehLargo, mesesNaTela, vista} from "./render.js";
 
 var observador=null;
 
-// "mostrar tudo" (entrada, saída e diário juntos, como na planilha) só existe no computador
+// "mostrar tudo" (entrada, contas e diária juntas, como na planilha) só existe no computador
 function opcaoTudo(){
   var sel=$("colSel"),quer=ehLargo(),op=sel.querySelector('option[value="tudo"]');
   if(quer&&!op){sel.insertBefore(new Option("mostrar tudo","tudo"),sel.firstChild);sel.value="tudo"}
@@ -47,7 +47,7 @@ export function renderPaineis(){
       '<span class="painel-mes"></span><em class="painel-anot"></em></button>'+
       '<b class="painel-fim"></b></div>'+
       '<table class="ledger"><thead><tr><th>dia</th><th class="c-entrada" title="dinheiro que entrou">entrada</th>'+
-      '<th class="c-saida" title="contas que saíram e dinheiro que você guardou — encolhem o bolo do ciclo">saída</th><th class="c-diario" title="o que você gastou no dia; em tom apagado, quanto você ainda pode gastar naquele dia">diário</th><th>saldo</th></tr></thead><tbody></tbody></table>';
+      '<th class="c-saida" title="contas com data (aluguel, boleto, parcela) e dinheiro que você guardou — encolhem o bolo do ciclo">contas</th><th class="c-diario" title="o que você escolheu gastar no dia; em tom apagado, quanto você ainda pode gastar naquele dia">diária</th><th>saldo</th></tr></thead><tbody></tbody></table>';
     cont.appendChild(p);
   }
   for(var i=0;i<n;i++){

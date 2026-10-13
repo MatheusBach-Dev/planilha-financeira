@@ -140,12 +140,13 @@ export function abrirNovo(dia,mk,editId){
   fe.novoMes=k;
   var ed=editId?(mesDoc(k).lancamentos.filter(function(x){return x.id===editId})[0]||null):null;
   fe.novoEditando=ed?ed.id:null;
-  if(ed)fe.novoTipo=ed.tipo;
+  // lançamento novo sempre começa em "diária", o caso mais comum (gasto que a pessoa escolhe fazer)
+  fe.novoTipo=ed?ed.tipo:"diario";
   var d=(ed?ed.dia:dia)||(k===HOJE_KEY?HOJE_DIA:1);
   if(["entrada","saida","diario","economia"].indexOf(fe.novoTipo)<0)fe.novoTipo="diario";
   abrirSheet(
     '<h3>'+(ed?"editar lançamento":"novo lançamento")+'</h3><p class="sh-sub">em '+MESES[pk.m]+' de '+pk.y+'</p>'+
-    '<div class="seg" id="segTipo">'+segb("entrada","entrada")+segb("saida","saída")+segb("diario","diário")+segb("economia","investimento")+'</div>'+
+    '<div class="seg" id="segTipo">'+segb("diario","diária")+segb("saida","conta")+segb("entrada","entrada")+segb("economia","investimento")+'</div>'+
     '<p class="sh-sub tipoDesc" id="descTipo"></p>'+
     '<label class="fld"><span>Valor</span><input id="nVal" inputmode="numeric" data-money value="'+(ed?num(ed.valor):"0,00")+'" placeholder="0,00"></label>'+
     '<label class="fld"><span>Categoria</span><select id="nCat">'+opcoesCat(fe.novoTipo,ed?ed.cat||"":"")+'</select></label>'+
@@ -179,13 +180,14 @@ export function opcoesCat(tipo,sel){
   return out;
 }
 
-export function rotuloTipo(t){return {economia:"investimento",saida:"saída",diario:"diário"}[t]||t}
+// nomes na tela; por dentro os tipos continuam "saida" e "diario"
+export function rotuloTipo(t){return {economia:"investimento",saida:"conta",diario:"diária"}[t]||t}
 
 export function descTipo(t){
   if(t==="entrada")return "Dinheiro que chega fora do salário: freela, venda, devolução. O salário já entra sozinho pela regra de recebimento.";
-  if(t==="saida")return "Conta com data pra sair: aluguel, luz, parcela, assinatura. Ela encolhe o bolo do ciclo de uma vez, e <b>não</b> é medida pela sua diária.";
+  if(t==="saida")return "O que tem <b>data pra pagar</b>: aluguel, luz, boleto, parcela, assinatura. É dividida por todos os dias do ciclo e <b>não</b> sai da diária de hoje. Gasto que você escolheu fazer (almoço, Pix, compra na Shopee) é diária.";
   if(t==="economia")return "Dinheiro que você tira de circulação pra investir ou guardar. Sai do saldo e abate a sua meta do ciclo.";
-  return "O que você gastou vivendo o dia: comida, transporte, rolê. <b>É só isso que a sua diária mede.</b>";
+  return "Tudo que você <b>escolhe gastar</b>, todo dia ou de vez em quando: almoço, Pix, hortifruti da semana, uma compra na Shopee. Sai do limite de hoje; se passar, o dia fica vermelho e o excesso sai dos próximos dias.";
 }
 
 export function atualizaSeg(){
@@ -304,7 +306,7 @@ export function abrirNovoFixo(id){
     '<h3>'+(f?"editar conta fixa":"conta fixa")+'</h3>'+
     '<p class="sh-sub">'+(f?"Vale "+textoPeriodoFixo(f)+"."
       :"Entra sozinha todo mês, a partir do mês que você escolher. É aqui que vão aluguel, luz, internet, assinatura e o quanto você investe.")+'</p>'+
-    '<div class="seg" id="segTipo">'+segb("entrada","entrada")+segb("saida","saída")+segb("economia","investimento")+'</div>'+
+    '<div class="seg" id="segTipo">'+segb("saida","conta")+segb("entrada","entrada")+segb("economia","investimento")+'</div>'+
     '<p class="sh-sub tipoDesc" id="descTipo"></p>'+
     '<label class="fld"><span>Valor</span><input id="fVal" inputmode="numeric" data-money value="'+num(f?f.valor:0)+'"></label>'+
     '<label class="fld"><span>Categoria</span><select id="fCat">'+opcoesCat(fe.novoTipo,f?f.cat||"":"")+'</select></label>'+
@@ -345,7 +347,7 @@ export function lerFormFixo(antigo){
   };
 }
 
-var NOME_TIPO={entrada:"entrada",saida:"saída",economia:"investimento",diario:"diário"};
+var NOME_TIPO={entrada:"entrada",saida:"contas",economia:"investimento",diario:"diária"};
 
 function nomeEntreAspas(f){return "“"+(f.desc||"sem nome")+"” ("+money(f.valor)+")"}
 
