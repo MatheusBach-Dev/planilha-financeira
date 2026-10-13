@@ -60,7 +60,10 @@ export function renderMes(r,ciclo,plano){
              ciclo.devendo>0.005?"já tirando "+money(ciclo.devendo)+" de contas atrasadas":ciclo.naSeca?"vivendo da sobra do ciclo anterior":"")+
       metric("Sua diária",plano.dias+" dia"+(plano.dias===1?"":"s")+" até "+fmtDia(ciclo.fim),
              money(plano.diaria),plano.nivel==="ok"?"good":(plano.nivel==="semGuardar"?"dim":"bad"),
-             plano.motivo?"limite reduzido hoje":plano.dica?"limite maior hoje":"recalcula a cada lançamento",null,false,plano.motivo||plano.dica)+
+             plano.motivo?"limite reduzido hoje":plano.dica?"limite maior hoje":"recalcula a cada lançamento",null,false,
+             [plano.motivo||plano.dica,plano.aPagar>0.005&&plano.diariaSePagar!=null
+               ?"Se pagar as contas que faltam ("+money(plano.aPagar)+"), a diária fica "+money(plano.diariaSePagar)+".":""]
+               .filter(Boolean).join(" "))+
       (plano.pre||!plano.reservaAtiva?"":
         metric("Fechar o ciclo com",plano.pctR+"% de "+money(plano.salario)+" de reserva",
                money(plano.reserva),ciclo.saldoFim>=plano.reserva?"good":"bad",
@@ -103,28 +106,37 @@ function secContas(){
   var lista=contasDoMes(k).filter(function(c){return c.status!=="auto"});
   if(!lista.length)return "";
   lista.sort(function(a,b){return (a.semDia?99:a.venc)-(b.semDia?99:b.venc)});
+  // as que a pessoa decidiu não pagar este mês ficam na lista, mas fora das contas de "pagas de quantas"
+  var cobradas=lista.filter(function(c){return c.status!=="pulada"});
+  var puladas=lista.length-cobradas.length;
   var pagas=lista.filter(function(c){return c.status==="pago"});
   var atrasadas=lista.filter(function(c){return c.status==="vencida"}).length;
-  var total=lista.reduce(function(s,c){return s+(+c.valor||0)},0);
+  var total=cobradas.reduce(function(s,c){return s+(+c.valor||0)},0);
   var pago=pagas.reduce(function(s,c){return s+(+c.pago.valor||0)},0);
   var linhas=lista.map(function(c){
     var sub=c.status==="pago"?"paga dia "+fmtIso(c.pago.data)+(Math.abs((+c.pago.valor||0)-(+c.valor||0))>0.005?" · "+money(c.pago.valor):"")
       :c.status==="vencida"?(c.semDia?"era pra pagar até o fim do mês":"venceu dia "+c.venc)+" · atrasada"
+      :c.status==="pulada"?"não vai pagar este mês"
       :c.semDia?"a pagar até o fim do mês":"vence dia "+c.venc;
-    var marca=c.status==="pago"?ICO_OK:c.status==="vencida"?"!":"";
+    var marca=c.status==="pago"?ICO_OK:c.status==="vencida"?"!":c.status==="pulada"?"–":"";
+    var alvo=esc(c.k+"|"+c.chave);
+    var bts=c.status==="pago"?'<button class="ed" data-pagar="'+alvo+'">editar</button>'
+      :c.status==="pulada"?'<button class="ed" data-voltarcobrar="'+alvo+'">desfazer</button>'
+      :'<button class="ed" data-pagar="'+alvo+'">paguei</button><button class="rm off" data-naopagar="'+alvo+'">não vou pagar</button>';
     return '<div class="conta-linha '+c.status+'"><span class="conta-st" aria-hidden="true">'+marca+'</span>'+
       '<div class="d">'+esc(c.desc||"conta")+'<small>'+(c.tipo==="economia"?"investimento":"saída")+' · '+sub+'</small></div>'+
-      '<b>'+money(c.valor)+'</b>'+
-      '<button class="ed" data-pagar="'+esc(c.k+"|"+c.chave)+'">'+(c.status==="pago"?"editar":"paguei")+'</button></div>';
+      '<b>'+money(c.valor)+'</b><span class="conta-bts">'+bts+'</span></div>';
   }).join("");
   return '<section class="bloco"><h2>contas do mês</h2>'+
-    '<div class="contas-resumo"><span><b>'+pagas.length+' de '+lista.length+'</b> pagas'+
-      (atrasadas?' · <em class="atrasada">'+atrasadas+' atrasada'+(atrasadas>1?'s':'')+'</em>':'')+'</span>'+
+    '<div class="contas-resumo"><span><b>'+pagas.length+' de '+cobradas.length+'</b> pagas'+
+      (atrasadas?' · <em class="atrasada">'+atrasadas+' atrasada'+(atrasadas>1?'s':'')+'</em>':'')+
+      (puladas?' · '+puladas+(puladas>1?' não vão pagar':' não vai pagar'):'')+'</span>'+
       '<span>'+money(pago)+' de '+money(total)+'</span></div>'+
-    '<div class="contas-barra" role="img" aria-label="'+pagas.length+' de '+lista.length+' contas pagas"><i style="width:'+
+    '<div class="contas-barra" role="img" aria-label="'+pagas.length+' de '+cobradas.length+' contas pagas"><i style="width:'+
       (total>0?Math.min(100,pago/total*100):0).toFixed(1)+'%"></i></div>'+
     linhas+
-    '<p class="hint" style="margin-top:12px">Toque em “paguei” quando pagar. Até lá a conta não sai do saldo, mas a diária já separa o valor.</p></section>';
+    '<p class="hint" style="margin-top:12px">Toque em “paguei” quando pagar: só aí a conta sai do saldo e da diária. '+
+    'O número de cima já tira o que está atrasado. Se não for pagar uma conta este mês, use “não vou pagar”.</p></section>';
 }
 
 // nota = explicação longa, numa linha inteira embaixo (texto comprido na coluna do valor espreme o título)

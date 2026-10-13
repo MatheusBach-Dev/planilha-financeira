@@ -121,6 +121,12 @@ export function renderLedger(painel,k,r){
       aviso.textContent=vencs.length>1?vencs.length+" contas":"conta";
       aviso.title="Venceu e não foi paga: "+vencs.map(function(v){return (v.desc||"conta")+" "+money(v.valor)}).join(", ")+". Ainda não saiu do saldo.";
     }else if(aviso)aviso.remove();
+    var puls=l.puladas||[],selo2=c[0].querySelector(".pulflag");
+    if(puls.length){
+      if(!selo2){selo2=document.createElement("i");selo2.className="pulflag";c[0].firstChild.appendChild(selo2)}
+      selo2.textContent="pulada";
+      selo2.title="Não vai pagar este mês: "+puls.map(function(p){return (p.desc||"conta")+" "+money(p.valor)}).join(", ")+".";
+    }else if(selo2)selo2.remove();
 
     setCel(c[1].firstChild,l.entrada,false);
     var spSai=c[2].firstChild;
