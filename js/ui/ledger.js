@@ -25,7 +25,9 @@ export function aplicarColuna(){
 
 // painel estreito (4 ou 5 meses) encolhe o selo do salário pra uma bolinha
 export function medirPaineis(){
-  var cont=$("painels"),n=cont.children.length||1,w=cont.clientWidth/n;
+  var cont=$("painels");
+  if(!cont)return;
+  var n=cont.children.length||1,w=cont.clientWidth/n;
   cont.classList.toggle("estreito",n>1&&w<250);
   aplicarColuna();
 }
@@ -110,8 +112,22 @@ export function renderLedger(painel,k,r){
       selo.textContent=(regraPagamento(pk.y,pk.m)||{}).desc||"salário";
     }else if(selo)selo.remove();
 
+    // conta que venceu sem "paguei": selo vermelho no dia e o valor em vermelho na saída,
+    // sem entrar no saldo (o dinheiro ainda está na conta)
+    var vencs=l.vencidas||[],pend=vencs.reduce(function(s,v){return s+(+v.valor||0)},0);
+    var aviso=c[0].querySelector(".vencflag");
+    if(vencs.length){
+      if(!aviso){aviso=document.createElement("i");aviso.className="vencflag";c[0].firstChild.appendChild(aviso)}
+      aviso.textContent=vencs.length>1?vencs.length+" contas":"conta";
+      aviso.title="Venceu e não foi paga: "+vencs.map(function(v){return (v.desc||"conta")+" "+money(v.valor)}).join(", ")+". Ainda não saiu do saldo.";
+    }else if(aviso)aviso.remove();
+
     setCel(c[1].firstChild,l.entrada,false);
-    setCel(c[2].firstChild,l.saida+l.economia,false);
+    var spSai=c[2].firstChild;
+    if(!(l.saida+l.economia)&&pend){
+      spSai.textContent=num(pend);spSai.className="vencido";
+      spSai.title="conta vencida e não paga: ainda não saiu do saldo";
+    }else{setCel(spSai,l.saida+l.economia,false);spSai.title=""}
     var refDia=diariaDe(pk.y,pk.m,l.dia);
     var spDia=c[3].firstChild;
     if(l.diario){
@@ -136,7 +152,7 @@ export function renderLedger(painel,k,r){
     c[4].firstChild.style.color=neutro?textFg:(claro?"#12263A":tintFg);
 
     tr.className=(l.dia===HOJE_DIA&&k===HOJE_KEY?"hoje ":"")+(l.conferido?"":"pendente ")+
-                 (l.seca?"seca ":"")+(l.pagamento?"pagrow":"");
+                 (l.seca?"seca ":"")+(l.pagamento?"pagrow ":"")+(vencs.length?"vencrow":"");
   });
 }
 

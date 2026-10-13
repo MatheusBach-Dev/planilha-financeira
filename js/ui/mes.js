@@ -1,8 +1,9 @@
-import {faltaMeta} from "../core/calculo.js";
-import {fmtDia, fmtDiaSem} from "../core/datas.js";
+import {contasDoMes, faltaMeta} from "../core/calculo.js";
+import {fmtDia, fmtDiaSem, key} from "../core/datas.js";
 import {state, ui} from "../core/estado.js";
 import {$, MESES, esc, money, num} from "../core/formato.js";
 import {regraPagamento, textoRegraPag, valorPagamento} from "../core/pagamento.js";
+import {fmtIso} from "./folhas.js";
 import {ehLargo, vista} from "./render.js";
 
 export function porCategoria(r){
@@ -48,14 +49,15 @@ export function renderMes(r,ciclo,plano){
 
   // o resumo do ciclo já aparece no topo (celular) ou no painel da direita (computador);
   // aqui ele só entra quando esse resumo não está na tela
+  var sobraCiclo=ciclo?(ciclo.sobraFim!=null?ciclo.sobraFim:ciclo.saldoFim):0;
   var resumoNaTela=!(ehLargo()&&vista.semLateral);
 
   v.innerHTML='<div class="blocos">'+
     (ciclo&&plano&&!resumoNaTela?(
       '<section class="bloco"><h2>ciclo atual</h2>'+
       metric("Sobra até o próximo salário",fmtDia(ciclo.inicio)+" a "+fmtDia(ciclo.fim)+" · "+ciclo.total+" dias",
-             money(ciclo.saldoFim),ciclo.saldoFim>=0?"good":"bad",
-             ciclo.naSeca?"vivendo da sobra do ciclo anterior":"")+
+             money(sobraCiclo),sobraCiclo>=0?"good":"bad",
+             ciclo.devendo>0.005?"já tirando "+money(ciclo.devendo)+" de contas atrasadas":ciclo.naSeca?"vivendo da sobra do ciclo anterior":"")+
       metric("Sua diária",plano.dias+" dia"+(plano.dias===1?"":"s")+" até "+fmtDia(ciclo.fim),
              money(plano.diaria),plano.nivel==="ok"?"good":(plano.nivel==="semGuardar"?"dim":"bad"),
              plano.motivo?"limite reduzido hoje":plano.dica?"limite maior hoje":"recalcula a cada lançamento",null,false,plano.motivo||plano.dica)+
@@ -80,7 +82,7 @@ export function renderMes(r,ciclo,plano){
            renda>0?Math.min(100,valorMeta>0?r.total.economia/valorMeta*100:0):null,!bateu)+
     metric("Custo de vida",pctCusto<=100?"dentro da renda":"acima da renda",money(custo),pctCusto<=100?"":"bad",
            renda>0?num(pctCusto)+"% do salário":"",renda>0?Math.min(100,pctCusto):0,pctCusto>100)+
-    '</section><section class="bloco"><h2>movimentações</h2>'+
+    '</section>'+secContas()+'<section class="bloco"><h2>movimentações</h2>'+
     mov("Entradas","var(--pos-deep)",r.total.entrada)+
     mov("Saídas","var(--neg-deep)",r.total.saida)+
     mov("Diários","var(--sea)",r.total.diario)+
@@ -91,6 +93,38 @@ export function renderMes(r,ciclo,plano){
     '</b>, que é o fechamento do mês anterior'+
     (r.diaPag>1?(' — e é com essa sobra que você vive do dia 1 ao '+(r.diaPag-1)):'')+
     '. O app soma apenas o que você anota: dia sem lançamento não desconta nada.</div></div>';
+}
+
+var ICO_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+// contas fixas de saída e investimento do mês, com o check-in de cada uma
+function secContas(){
+  var k=key(ui.atual.y,ui.atual.m);
+  var lista=contasDoMes(k).filter(function(c){return c.status!=="auto"});
+  if(!lista.length)return "";
+  lista.sort(function(a,b){return (a.semDia?99:a.venc)-(b.semDia?99:b.venc)});
+  var pagas=lista.filter(function(c){return c.status==="pago"});
+  var atrasadas=lista.filter(function(c){return c.status==="vencida"}).length;
+  var total=lista.reduce(function(s,c){return s+(+c.valor||0)},0);
+  var pago=pagas.reduce(function(s,c){return s+(+c.pago.valor||0)},0);
+  var linhas=lista.map(function(c){
+    var sub=c.status==="pago"?"paga dia "+fmtIso(c.pago.data)+(Math.abs((+c.pago.valor||0)-(+c.valor||0))>0.005?" · "+money(c.pago.valor):"")
+      :c.status==="vencida"?(c.semDia?"era pra pagar até o fim do mês":"venceu dia "+c.venc)+" · atrasada"
+      :c.semDia?"a pagar até o fim do mês":"vence dia "+c.venc;
+    var marca=c.status==="pago"?ICO_OK:c.status==="vencida"?"!":"";
+    return '<div class="conta-linha '+c.status+'"><span class="conta-st" aria-hidden="true">'+marca+'</span>'+
+      '<div class="d">'+esc(c.desc||"conta")+'<small>'+(c.tipo==="economia"?"investimento":"saída")+' · '+sub+'</small></div>'+
+      '<b>'+money(c.valor)+'</b>'+
+      '<button class="ed" data-pagar="'+esc(c.k+"|"+c.chave)+'">'+(c.status==="pago"?"editar":"paguei")+'</button></div>';
+  }).join("");
+  return '<section class="bloco"><h2>contas do mês</h2>'+
+    '<div class="contas-resumo"><span><b>'+pagas.length+' de '+lista.length+'</b> pagas'+
+      (atrasadas?' · <em class="atrasada">'+atrasadas+' atrasada'+(atrasadas>1?'s':'')+'</em>':'')+'</span>'+
+      '<span>'+money(pago)+' de '+money(total)+'</span></div>'+
+    '<div class="contas-barra" role="img" aria-label="'+pagas.length+' de '+lista.length+' contas pagas"><i style="width:'+
+      (total>0?Math.min(100,pago/total*100):0).toFixed(1)+'%"></i></div>'+
+    linhas+
+    '<p class="hint" style="margin-top:12px">Toque em “paguei” quando pagar. Até lá a conta não sai do saldo, mas a diária já separa o valor.</p></section>';
 }
 
 // nota = explicação longa, numa linha inteira embaixo (texto comprido na coluna do valor espreme o título)
