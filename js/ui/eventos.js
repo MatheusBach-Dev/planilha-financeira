@@ -2,7 +2,7 @@ import {state, ui} from "../core/estado.js";
 import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {apagarFixo, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, setTab} from "./acoes.js";
+import {apagarFixo, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, naoPagarConta, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, setTab, voltarACobrarConta} from "./acoes.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, abrirPagarConta, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
@@ -64,6 +64,11 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     var dpc=e.target.closest("[data-despagar]");
     if(dpc){var b=dpc.dataset.despagar.split("|");return desfazerPagoConta(b[0],b[1])}
     if(e.target.closest("#pgSalvar"))return salvarPagoConta();
+    // "não vou pagar este mês" e o desfazer, no mesmo formato "mês da conta|chave da conta"
+    var npc=e.target.closest("[data-naopagar]");
+    if(npc){var c2=npc.dataset.naopagar.split("|");return naoPagarConta(c2[0],c2[1])}
+    var vcc=e.target.closest("[data-voltarcobrar]");
+    if(vcc){var c3=vcc.dataset.voltarcobrar.split("|");return voltarACobrarConta(c3[0],c3[1])}
 
     var df=e.target.closest("[data-delfixo]");
     if(df)return removerFixo(df.dataset.delfixo);

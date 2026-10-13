@@ -1,6 +1,6 @@
-import {calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
+import {abertasNoIntervalo, calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
 import {cicloDoDia, dadosDia, saldoNaData, somaNoIntervalo} from "./ciclo.js";
-import {chaveDia, difDias, hoje, hojeZero, key, maisDias} from "./datas.js";
+import {chaveDia, difDias, hoje, hojeZero, isoData, key, maisDias} from "./datas.js";
 import {mesLeitura, state} from "./estado.js";
 import {money} from "./formato.js";
 
@@ -34,7 +34,10 @@ export function planoAperto(ciclo,ap){
   var falta=faltaMeta(sal,state.config.metaEconomia,somaNoIntervalo(ciclo.inicio,ciclo.fim).economia+pend.economia);
   var amanha=maisDias(hj,1);
   var futuros=amanha<=ciclo.fim?somaNoIntervalo(amanha,ciclo.fim).diario:0;
-  var bruto=saldoNaData(ciclo.fim)+futuros-pend.total;
+  // como na diária: conta ainda não paga não desconta (o saldo projetado do fim já tira as que vão vencer)
+  var ab=abertasNoIntervalo(isoData(hj.getFullYear(),hj.getMonth(),hj.getDate()),
+                            isoData(ciclo.fim.getFullYear(),ciclo.fim.getMonth(),ciclo.fim.getDate()));
+  var bruto=saldoNaData(ciclo.fim)+futuros+ab.saida+ab.economia;
   var M=bruto-reserva-falta,nivel="ok",motivo="";
   if(M<=0){
     M=bruto-reserva;nivel="semInvestir";
@@ -83,6 +86,8 @@ export function planoCiclo(ciclo){
   var guardar=sal*pctG/100,reserva=sal*pctR/100;
   var jaGuardado=ciclo.mov.economia;
   var faltaGuardar=faltaMeta(sal,pctG,jaGuardado);
+  // os dois cenários: a diária de agora (sem as contas não pagas) e a diária se pagar todas
+  var cb=cicloDoDia[chaveDia(hj)],aPagar=cb?cb.aPagar||0:0,diariaSePagar=cb?cb.basePagando:base;
 
   // motivo = aviso de problema (a tela pinta de vermelho); dica = explicação neutra
   var nivel="ok",motivo="",dica="";
@@ -104,5 +109,6 @@ export function planoCiclo(ciclo){
           faltaGuardar:faltaGuardar,metaBatida:guardar>0&&faltaGuardar<=0,dias:ciclo.restantes,gasto:ciclo.mov.diario,
           diaria:hojeDiaria,base:base,atraso:atraso,sobraAcumulada:sobra,nivel:nivel,motivo:motivo,dica:dica,pctG:pctG,pctR:pctR,
           reservaAtiva:!!state.config.usarReserva,devendo:ciclo.devendo||0,atrasadas:ciclo.atrasadas||[],
+          aPagar:aPagar,diariaSePagar:diariaSePagar,
           gastoHoje:gastoHoje,resta:resta,passou:passou,aperto:ap,noAperto:noAperto,preview:pv};
 }

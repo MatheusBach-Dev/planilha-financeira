@@ -1,6 +1,6 @@
 import {apertoDoCiclo, planoAperto} from "./aperto.js";
-import {calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
-import {cent, chaveDia, hoje, hojeZero, key, maisDias, parseKey, somaMes} from "./datas.js";
+import {abertasNoIntervalo, calcular, faltaMeta, inicialDe, pctReserva, pendencias} from "./calculo.js";
+import {cent, chaveDia, hoje, hojeZero, isoData, key, maisDias, parseKey, somaMes} from "./datas.js";
 import {state, ui} from "./estado.js";
 import {diaPagamento, ehPagamento, primeiroPagamento, temPagamento, valorPagamento} from "./pagamento.js";
 
@@ -95,18 +95,27 @@ export function baseDoCiclo(inicio,fim){
   var sal=salarioDoCiclo(inicio);
   var reserva=sal*pctReserva()/100;
   var alvo=sal*Math.max(0,Math.min(100,+state.config.metaEconomia||0))/100;
-  // no ciclo de hoje, o que está vencido sem pagar sai da diária (a pessoa ainda vai pagar);
-  // investimento atrasado conta pra meta, pra não ser descontado duas vezes
+  // a diária só desconta conta fixa depois do "paguei": as que ainda vão vencer neste ciclo voltam
+  // pra conta e as vencidas sem pagar (que já não saem do saldo) não são tiradas.
+  // Investimento programado (pago ou não) conta pra meta, pra meta não descontar o mesmo dinheiro.
   var hj=hojeZero(),pend=hj>=inicio&&hj<=fim?pendencias():{total:0,economia:0};
+  var ab=abertasNoIntervalo(isoData(inicio.getFullYear(),inicio.getMonth(),inicio.getDate()),
+                            isoData(fim.getFullYear(),fim.getMonth(),fim.getDate()));
   var falta=faltaMeta(sal,state.config.metaEconomia,mov.economia+pend.economia);
   var dias=Math.round((fim-inicio)/86400000)+1;
-  var bruto=saldoAntes+mov.entrada-mov.saida-mov.economia-pend.total;
-  var disponivel=bruto-falta-reserva;
-  if(disponivel<=0)disponivel=bruto-reserva;
-  if(disponivel<=0)disponivel=bruto;
-  return {base:dias>0?Math.max(0,Math.floor(disponivel/dias*100)/100):0,dias:dias,disponivel:disponivel,
+  var bruto=saldoAntes+mov.entrada-(mov.saida-ab.saida)-(mov.economia-ab.economia);
+  var aPagar=ab.saida+ab.economia+pend.total;
+  function porDia(b){
+    var d=b-falta-reserva;
+    if(d<=0)d=b-reserva;
+    if(d<=0)d=b;
+    return {disponivel:d,base:dias>0?Math.max(0,Math.floor(d/dias*100)/100):0};
+  }
+  var agora=porDia(bruto),pagando=porDia(bruto-aPagar);
+  return {base:agora.base,dias:dias,disponivel:agora.disponivel,
           reserva:reserva,investir:alvo,jaInvestido:mov.economia,faltaInvestir:falta,
-          inicio:inicio,fim:fim,gasto:mov.diario,salario:sal,devendo:pend.total};
+          inicio:inicio,fim:fim,gasto:mov.diario,salario:sal,devendo:pend.total,
+          aPagar:aPagar,basePagando:pagando.base};
 }
 
 export var mapaDiaria={},cicloDoDia={};

@@ -127,7 +127,7 @@ export function renderPlano(p,ciclo){
     var nAtr=(ciclo.atrasadas||[]).length;
     l.push('<div class="pl devendo"><span>devendo em '+nAtr+' conta'+(nAtr===1?'':'s')+' atrasada'+(nAtr===1?'':'s')+'</span><b>'+money(ciclo.devendo)+'</b></div>'+
       '<div class="motivo neutro">'+esc((ciclo.atrasadas||[]).map(function(a){return (a.desc||"conta")+" (venceu dia "+a.venc+")"}).join(", "))+
-      '. O valor ainda está na sua conta, mas o número de cima e a diária já separam ele. Marque “paguei” quando pagar.</div>');
+      '. O valor ainda está na sua conta e só sai da diária quando você marcar “paguei”. O número de cima já tira ele.</div>');
   }
   l.push('<div class="pl destaque '+nv+'"><span>ainda dá pra gastar hoje</span><b>'+money(p.resta)+'</b></div>');
   if(p.gastoHoje>0){
@@ -138,6 +138,9 @@ export function renderPlano(p,ciclo){
   if(p.motivo)l.push('<div class="motivo">'+esc(p.motivo)+'</div>');
   if(p.dica)l.push('<div class="motivo neutro">'+esc(p.dica)+'</div>');
   l.push('<div class="pl"><span>limite de hoje</span><b>'+money(p.diaria)+'</b></div>');
+  // conta fixa só sai da diária depois do "paguei": mostra como fica a diária se pagar o que falta
+  if(p.aPagar>0.005&&p.diariaSePagar!=null)
+    l.push('<div class="pl sepagar"><span>se pagar as contas que faltam ('+money(p.aPagar)+'), a diária fica</span><b>'+money(p.diariaSePagar)+'</b></div>');
   if(Math.abs(p.base-p.diaria)>0.005)
     l.push('<div class="pl"><span>sua diária normal</span><b>'+money(p.base)+'</b></div>');
   if(!p.pre){

@@ -6,7 +6,7 @@ import {localSave, mesDoc, padraoConfig, state, ui} from "../core/estado.js";
 import {$, money, uid} from "../core/formato.js";
 import {adicionarLancamento, editarLancamento, removerLancamento} from "../core/lancamentos.js";
 import {mesExtenso} from "../core/pagamento.js";
-import {desmarcarPaga, marcarPaga} from "../dados/checkin.js";
+import {desmarcarPaga, marcarPaga, naoVouPagar, voltarACobrar} from "../dados/checkin.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {abrirDia, fe, fecharSheet, lerFormFixo} from "./folhas.js";
@@ -285,4 +285,19 @@ export function desfazerPagoConta(k,chave){
   if(!r.ok)return toast(r.msg);
   fe.pagarConta=null;
   render();voltarDoPagamento(volta);toast(r.msg);
+}
+
+// "não vou pagar este mês" e o desfazer: a janela do dia continua aberta, já atualizada
+export function naoPagarConta(k,chave){
+  var volta=fe.diaAberto;
+  var r=naoVouPagar(k,chave);
+  if(!r.ok)return toast(r.msg);
+  render();if(volta)abrirDia(volta.dia,volta.k);toast(r.msg);
+}
+
+export function voltarACobrarConta(k,chave){
+  var volta=fe.diaAberto;
+  var r=voltarACobrar(k,chave);
+  if(!r.ok)return toast(r.msg);
+  render();if(volta)abrirDia(volta.dia,volta.k);toast(r.msg);
 }
