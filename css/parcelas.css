@@ -1,0 +1,20 @@
+/* ————— parcelamentos ————— */
+.fixo.parc small .atrasada{color:var(--neg-deep);font-weight:500}
+.fixo.parc b .feito{color:var(--pos-deep)}
+
+/* lista de parcelas no formulário: "6/12 · out/2026 · a pagar" + valor */
+.parc-linha{
+  display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-bottom:1px solid var(--line-soft);font-size:12.5px;
+}
+.parc-linha>span{flex:1;min-width:0;color:var(--text-dim)}
+.parc-linha>b{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.parc-linha input{
+  width:110px;flex:none;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:var(--r);padding:6px 8px;font-size:14px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.parc-linha input:focus{border-color:var(--sea);outline:none}
+.parc-linha.pago>span,.parc-linha.auto>span{color:var(--pos-deep)}
+.parc-linha.vencida>span{color:var(--neg-deep)}
+.parc-linha.pulada>span{text-decoration:line-through}
+#pcResumo{margin-top:-4px;line-height:1.6}

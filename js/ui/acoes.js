@@ -7,10 +7,12 @@ import {$, money, uid} from "../core/formato.js";
 import {adicionarLancamento, editarLancamento, removerLancamento} from "../core/lancamentos.js";
 import {mesExtenso} from "../core/pagamento.js";
 import {desmarcarPaga, marcarPaga, naoVouPagar, voltarACobrar} from "../dados/checkin.js";
+import {removerParcelamento, salvarParcelamento} from "../dados/parcelamentos.js";
 import {salvarConfig, salvarMes} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {abrirDia, fe, fecharSheet, lerFormFixo} from "./folhas.js";
 import {lerMoney} from "./perfil.js";
+import {lerFormParcelamento} from "./parcelas.js";
 import {render} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
@@ -300,4 +302,27 @@ export function voltarACobrarConta(k,chave){
   var r=voltarACobrar(k,chave);
   if(!r.ok)return toast(r.msg);
   render();if(volta)abrirDia(volta.dia,volta.k);toast(r.msg);
+}
+
+// ————— parcelamentos —————
+
+export function salvarParc(){
+  var r=salvarParcelamento(lerFormParcelamento());
+  if(!r.ok)return toast(r.msg);
+  fe.parcEditando=null;
+  fecharSheet();render();toast(r.msg);
+}
+
+// apagar pede um segundo toque (o confirm() do navegador não aparece em todo lugar)
+export function apagarParc(){
+  var b=$("parcApagar");
+  if(!fe.parcApagar){
+    fe.parcApagar=true;
+    if(b)b.textContent="toque de novo pra apagar: a compra some de todos os meses, inclusive as parcelas já pagas";
+    return;
+  }
+  var r=removerParcelamento(fe.parcEditando);
+  if(!r.ok)return toast(r.msg);
+  fe.parcEditando=null;fe.parcApagar=false;
+  fecharSheet();render();toast(r.msg);
 }

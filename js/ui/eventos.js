@@ -2,7 +2,8 @@ import {state, ui} from "../core/estado.js";
 import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
-import {apagarFixo, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, naoPagarConta, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, setTab, voltarACobrarConta} from "./acoes.js";
+import {apagarFixo, apagarParc, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, naoPagarConta, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, salvarParc, setTab, voltarACobrarConta} from "./acoes.js";
+import {abrirParcelamento, atualizaParcelamento} from "./parcelas.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, abrirPagarConta, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
@@ -35,6 +36,14 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
   
     var tp=e.target.closest("[data-tipo]");
     if(tp){fe.novoTipo=tp.dataset.tipo;atualizaSeg();return atualizaAvisoFixo()}
+    // parcelamentos: crédito ou débito, abrir, salvar e apagar
+    var fm=e.target.closest("[data-forma]");
+    if(fm){fe.parcForma=fm.dataset.forma;return atualizaParcelamento()}
+    var epc=e.target.closest("[data-editparc]");
+    if(epc)return abrirParcelamento(epc.dataset.editparc);
+    if(e.target.closest("#addParc"))return abrirParcelamento();
+    if(e.target.closest("#parcSalvar"))return salvarParc();
+    if(e.target.closest("#parcApagar"))return apagarParc();
   
     var tick=e.target.closest(".tick");
     if(tick){
@@ -131,7 +140,7 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     if(e.target.closest&&e.target.closest("#viewSet [data-set]")){
       ui.cfgSujo=true;atualizaSaveBar();
     }
-    if(e.target.closest&&e.target.closest("#sheet"))atualizaAvisoFixo();
+    if(e.target.closest&&e.target.closest("#sheet")){atualizaAvisoFixo();atualizaParcelamento()}
   });
   document.addEventListener("change",function(e){
     if(mudancaInvestir(e))return;
@@ -147,7 +156,13 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     }
     if(e.target.id==="fRegra")atualizaRegraFixo();
     if(e.target.id==="pRegra")return atualizaRegraPag();
-    if(e.target.closest&&e.target.closest("#sheet"))return atualizaAvisoFixo();
+    // "Repetir: parcelado…" no lançamento abre a compra parcelada com o que já foi digitado
+    if(e.target.id==="nFixo"&&e.target.value==="parc"){
+      var cat=document.getElementById("nCat");
+      return abrirParcelamento(null,{desc:document.getElementById("nDesc").value,cat:cat?cat.value:"",
+        valor:lerMoney(document.getElementById("nVal")),dia:+document.getElementById("nDia").value});
+    }
+    if(e.target.closest&&e.target.closest("#sheet")){atualizaParcelamento();return atualizaAvisoFixo()}
     if(e.target.id==="qtdSel")return escolherMeses(e.target.value);
     if(e.target.id==="colSel")return aplicarColuna();
   });
