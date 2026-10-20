@@ -32,7 +32,7 @@ export function renderCategorias(r){
         '<b>'+money(x.valor)+' <i>'+num(pct)+'%</i></b></div>'+
         '<div class="bar"><i style="width:'+pct.toFixed(1)+'%;background:'+cor(x.tipos)+'"></i></div></div>';
     }).join("")+
-    '<p class="hint" style="margin-top:12px">Soma saídas, diários e investimento do mês. Entradas ficam de fora.</p></section>';
+    '<p class="hint" style="margin-top:12px">Soma contas, diárias e investimento do mês. Entradas ficam de fora.</p></section>';
 }
 
 export function renderMes(r,ciclo,plano){
@@ -74,8 +74,8 @@ export function renderMes(r,ciclo,plano){
       '</section><section class="bloco"><h2>'+MESES[ui.atual.m]+'</h2>'
     ):'<section class="bloco"><h2>'+(ciclo&&plano?MESES[ui.atual.m]:"como o mês está indo")+'</h2>')+
     metric("Sobra do mês",sobrou>=0?"sobrou dinheiro":"faltou dinheiro",money(sobrou),sobrou>=0?"good":"bad",
-           "entradas menos saídas, diários e investimento")+
-    metric("Diário médio",base?("média dos "+base+" dias já corridos"):"nenhum dia corrido ainda",
+           "entradas menos contas, diárias e investimento")+
+    metric("Gasto médio por dia",base?("média dos "+base+" dias já corridos"):"nenhum dia corrido ainda",
            money(medio),medio<=ui.permitido?"good":"bad",
            medio>ui.permitido?"acima do que dá pra gastar":"dentro do que dá pra gastar")+
     metric("Investido no mês",
@@ -87,8 +87,8 @@ export function renderMes(r,ciclo,plano){
            renda>0?num(pctCusto)+"% do salário":"",renda>0?Math.min(100,pctCusto):0,pctCusto>100)+
     '</section>'+secContas()+'<section class="bloco"><h2>movimentações</h2>'+
     mov("Entradas","var(--pos-deep)",r.total.entrada)+
-    mov("Saídas","var(--neg-deep)",r.total.saida)+
-    mov("Diários","var(--sea)",r.total.diario)+
+    mov("Contas","var(--neg-deep)",r.total.saida)+
+    mov("Diárias (gastos do dia)","var(--sea)",r.total.diario)+
     mov("Investido","var(--text-dim)",r.total.economia)+
     mov("No cartão","var(--text-dim)",r.total.cartao)+
     '</section>'+renderCategorias(r)+
@@ -100,7 +100,7 @@ export function renderMes(r,ciclo,plano){
 
 var ICO_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
-// contas fixas de saída e investimento do mês, com o check-in de cada uma
+// contas fixas e investimentos fixos do mês, com o check-in de cada um
 function secContas(){
   var k=key(ui.atual.y,ui.atual.m);
   var lista=contasDoMes(k).filter(function(c){return c.status!=="auto"});
@@ -124,7 +124,7 @@ function secContas(){
       :c.status==="pulada"?'<button class="ed" data-voltarcobrar="'+alvo+'">desfazer</button>'
       :'<button class="ed" data-pagar="'+alvo+'">paguei</button><button class="rm off" data-naopagar="'+alvo+'">não vou pagar</button>';
     return '<div class="conta-linha '+c.status+'"><span class="conta-st" aria-hidden="true">'+marca+'</span>'+
-      '<div class="d">'+esc(c.desc||"conta")+'<small>'+(c.tipo==="economia"?"investimento":"saída")+' · '+sub+'</small></div>'+
+      '<div class="d">'+esc(c.desc||"conta")+'<small>'+(c.tipo==="economia"?"investimento":"conta")+' · '+sub+'</small></div>'+
       '<b>'+money(c.valor)+'</b><span class="conta-bts">'+bts+'</span></div>';
   }).join("");
   return '<section class="bloco"><h2>contas do mês</h2>'+

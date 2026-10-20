@@ -50,10 +50,12 @@ export function abrirDia(dia,mk){
       '<button class="ed" data-pagar="'+alvo+'">paguei</button>'+
       '<button class="rm off" data-naopagar="'+alvo+'">não vou pagar este mês</button></div>';
   }
+  // conta fixa ou parcela de compra parcelada
+  function origem(c){return c.parcela?"parcela "+c.parcela.i+" de "+c.parcela.n:"conta fixa"}
   var vencidas=l.vencidas.map(function(v){
     var alvo=esc(v.k+"|"+v.chave);
     return '<div class="item comconta"><i class="dot" style="background:var(--neg-deep)"></i><div class="d">'+esc(v.desc||"conta")+
-      '<small class="atrasada">'+rotuloTipo(v.tipo)+' · conta fixa · venceu dia '+v.venc+' e não foi paga</small></div>'+
+      '<small class="atrasada">'+rotuloTipo(v.tipo)+' · '+origem(v)+' · venceu dia '+v.venc+' e não foi paga</small></div>'+
       '<b class="atrasada">'+money(v.valor)+'</b></div>'+
       '<div class="conta-acao atrasada"><span>não sai do saldo nem da diária até você marcar "paguei"</span>'+
       '<button class="ed" data-pagar="'+alvo+'">paguei</button>'+
@@ -62,7 +64,7 @@ export function abrirDia(dia,mk){
   // "não vou pagar este mês": fica cinza no dia, com desfazer
   var puladas=l.puladas.map(function(p){
     return '<div class="item comconta pulada"><i class="dot" style="background:var(--line)"></i><div class="d">'+esc(p.desc||"conta")+
-      '<small>'+rotuloTipo(p.tipo)+' · conta fixa · não vai pagar este mês</small></div>'+
+      '<small>'+rotuloTipo(p.tipo)+' · '+origem(p)+' · não vai pagar este mês</small></div>'+
       '<b class="pulada">'+money(p.valor)+'</b></div>'+
       '<div class="conta-acao pulada"><span>fora do saldo, da diária e do "devendo" neste mês</span>'+
       '<button class="ed" data-voltarcobrar="'+esc(p.k+"|"+p.chave)+'">desfazer</button></div>';
@@ -72,10 +74,14 @@ export function abrirDia(dia,mk){
     var cor=it.tipo==="entrada"?"var(--pos-deep)":it.tipo==="saida"?"var(--neg-deep)":it.tipo==="economia"?"var(--text-dim)":"var(--sea)";
     var acao=acaoConta(it),comCheckin=it.checkin&&it.checkin!=="auto";
     return '<div class="item'+(acao?" comconta":"")+'"><i class="dot" style="background:'+cor+'"></i><div class="d">'+
-      esc(it.desc||it.tipo)+'<small>'+(it.cat?esc(it.cat)+" · ":"")+rotuloTipo(it.tipo)+(it.pagamento?" · recebimento automático":it.fixo?(" · conta fixa"+(it.adiadaDe?" · adiada do dia "+it.adiadaDe:"")):"")+(it.cartao?" · no cartão":"")+'</small></div>'+
+      esc(it.desc||it.tipo)+'<small>'+(it.cat?esc(it.cat)+" · ":"")+rotuloTipo(it.tipo)+(it.pagamento?" · recebimento automático":
+        it.parcela?" · parcela "+it.parcela.i+" de "+it.parcela.n+" · "+(it.parcela.forma==="debito"?"débito/boleto":"crédito")+(it.parcela.onde?" "+esc(it.parcela.onde):""):
+        it.fixo?(" · conta fixa"+(it.adiadaDe?" · adiada do dia "+it.adiadaDe:"")):"")+(it.cartao&&!it.parcela?" · no cartão":"")+'</small></div>'+
       '<b>'+money(it.valor)+'</b>'+
       (it.pagamento
         ? '<button class="ed" data-editpag="'+esc((regraPagamento(pk.y,pk.m)||{}).id||"")+'">editar</button>'
+        : it.parcela
+          ? '<button class="ed" data-editparc="'+esc(it.parcela.id)+'">editar</button>'
         : it.fixo
           ? '<button class="ed" data-editfixo="'+esc(it.id.slice(4))+'">editar</button>'
           : '<button class="ed" data-editlanc="'+esc(it.id)+'" data-dia="'+dia+'" data-mes="'+k+'">editar</button>')+
@@ -140,12 +146,13 @@ export function abrirNovo(dia,mk,editId){
   fe.novoMes=k;
   var ed=editId?(mesDoc(k).lancamentos.filter(function(x){return x.id===editId})[0]||null):null;
   fe.novoEditando=ed?ed.id:null;
-  if(ed)fe.novoTipo=ed.tipo;
+  // lançamento novo sempre começa em "diária", o caso mais comum (gasto que a pessoa escolhe fazer)
+  fe.novoTipo=ed?ed.tipo:"diario";
   var d=(ed?ed.dia:dia)||(k===HOJE_KEY?HOJE_DIA:1);
   if(["entrada","saida","diario","economia"].indexOf(fe.novoTipo)<0)fe.novoTipo="diario";
   abrirSheet(
     '<h3>'+(ed?"editar lançamento":"novo lançamento")+'</h3><p class="sh-sub">em '+MESES[pk.m]+' de '+pk.y+'</p>'+
-    '<div class="seg" id="segTipo">'+segb("entrada","entrada")+segb("saida","saída")+segb("diario","diário")+segb("economia","investimento")+'</div>'+
+    '<div class="seg" id="segTipo">'+segb("diario","diária")+segb("saida","conta")+segb("entrada","entrada")+segb("economia","investimento")+'</div>'+
     '<p class="sh-sub tipoDesc" id="descTipo"></p>'+
     '<label class="fld"><span>Valor</span><input id="nVal" inputmode="numeric" data-money value="'+(ed?num(ed.valor):"0,00")+'" placeholder="0,00"></label>'+
     '<label class="fld"><span>Categoria</span><select id="nCat">'+opcoesCat(fe.novoTipo,ed?ed.cat||"":"")+'</select></label>'+
@@ -153,7 +160,7 @@ export function abrirNovo(dia,mk,editId){
     '<div class="row2">'+
       '<label class="fld"><span>Dia</span><input id="nDia" type="number" min="1" max="'+diasNoMes(pk.y,pk.m)+'" value="'+d+'"></label>'+
       (ed?'<label class="fld"><span>Repetir</span><select id="nFixo" disabled><option value="">só neste mês</option></select></label>'
-          :'<label class="fld"><span>Repetir</span><select id="nFixo"><option value="">só neste mês</option><option value="1">todo mês</option></select></label>')+
+          :'<label class="fld"><span>Repetir</span><select id="nFixo"><option value="">só neste mês</option><option value="1">todo mês</option><option value="parc">parcelado…</option></select></label>')+
     '</div>'+
     '<label class="chk" id="wrapCartao"><input type="checkbox" id="nCartao"'+(ed&&ed.cartao?" checked":"")+'> paguei no cartão</label>'+
     '<button class="btn w" id="nSalvar">'+(ed?"Salvar alterações":"Salvar lançamento")+'</button>'
@@ -179,13 +186,14 @@ export function opcoesCat(tipo,sel){
   return out;
 }
 
-export function rotuloTipo(t){return {economia:"investimento",saida:"saída",diario:"diário"}[t]||t}
+// nomes na tela; por dentro os tipos continuam "saida" e "diario"
+export function rotuloTipo(t){return {economia:"investimento",saida:"conta",diario:"diária"}[t]||t}
 
 export function descTipo(t){
   if(t==="entrada")return "Dinheiro que chega fora do salário: freela, venda, devolução. O salário já entra sozinho pela regra de recebimento.";
-  if(t==="saida")return "Conta com data pra sair: aluguel, luz, parcela, assinatura. Ela encolhe o bolo do ciclo de uma vez, e <b>não</b> é medida pela sua diária.";
+  if(t==="saida")return "O que tem <b>data pra pagar</b>: aluguel, luz, boleto, parcela, assinatura. É dividida por todos os dias do ciclo e <b>não</b> sai da diária de hoje. Gasto que você escolheu fazer (almoço, Pix, compra na Shopee) é diária.";
   if(t==="economia")return "Dinheiro que você tira de circulação pra investir ou guardar. Sai do saldo e abate a sua meta do ciclo.";
-  return "O que você gastou vivendo o dia: comida, transporte, rolê. <b>É só isso que a sua diária mede.</b>";
+  return "Tudo que você <b>escolhe gastar</b>, todo dia ou de vez em quando: almoço, Pix, hortifruti da semana, uma compra na Shopee. Sai do limite de hoje; se passar, o dia fica vermelho e o excesso sai dos próximos dias.";
 }
 
 export function atualizaSeg(){
@@ -304,7 +312,7 @@ export function abrirNovoFixo(id){
     '<h3>'+(f?"editar conta fixa":"conta fixa")+'</h3>'+
     '<p class="sh-sub">'+(f?"Vale "+textoPeriodoFixo(f)+"."
       :"Entra sozinha todo mês, a partir do mês que você escolher. É aqui que vão aluguel, luz, internet, assinatura e o quanto você investe.")+'</p>'+
-    '<div class="seg" id="segTipo">'+segb("entrada","entrada")+segb("saida","saída")+segb("economia","investimento")+'</div>'+
+    '<div class="seg" id="segTipo">'+segb("saida","conta")+segb("entrada","entrada")+segb("economia","investimento")+'</div>'+
     '<p class="sh-sub tipoDesc" id="descTipo"></p>'+
     '<label class="fld"><span>Valor</span><input id="fVal" inputmode="numeric" data-money value="'+num(f?f.valor:0)+'"></label>'+
     '<label class="fld"><span>Categoria</span><select id="fCat">'+opcoesCat(fe.novoTipo,f?f.cat||"":"")+'</select></label>'+
@@ -345,7 +353,7 @@ export function lerFormFixo(antigo){
   };
 }
 
-var NOME_TIPO={entrada:"entrada",saida:"saída",economia:"investimento",diario:"diário"};
+var NOME_TIPO={entrada:"entrada",saida:"contas",economia:"investimento",diario:"diária"};
 
 function nomeEntreAspas(f){return "“"+(f.desc||"sem nome")+"” ("+money(f.valor)+")"}
 

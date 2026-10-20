@@ -1,6 +1,7 @@
 import {HOJE_DIA, HOJE_ISO, HOJE_KEY, diasNoMes, isoData, key, mesAntes, nEsimoDiaUtil, parseKey, somaMes, ultimoDiaUtil} from "./datas.js";
 import {mesLeitura, state, temDados} from "./estado.js";
 import {diaPagamento, mesExtenso, regraPagamento, temPagamento} from "./pagamento.js";
+import {parcelasDoMes} from "./parcelas.js";
 
 export function diaDoFixo(f,y,m){
   var r=f.regra||"fixo",dias=diasNoMes(y,m),d;
@@ -128,9 +129,17 @@ export function contasDoMes(k){
     var chave=serieDoFixo(f),pg=d.pagos[chave]||null;
     var status=pulado(d,f)?"pulada":vIso<CHECKIN_DESDE?"auto":pg?"pago":vIso<HOJE_ISO?"vencida":"aberta";
     var nominal=diaDoFixo(Object.assign({},f,{espera:false}),pk.y,pk.m);
-    out.push({f:f,k:k,chave:chave,id:"fix:"+f.id,desc:f.desc,tipo:f.tipo,valor:+f.valor||0,cartao:!!f.cartao,
+    out.push({f:f,k:k,chave:chave,id:"fix:"+f.id,desc:f.desc,cat:f.cat||"",tipo:f.tipo,valor:+f.valor||0,cartao:!!f.cartao,
               venc:venc,vencIso:vIso,adiadaDe:venc!==nominal&&f.regra!=="mes"?nominal:0,
               semDia:f.regra==="mes",status:status,pago:pg});
+  });
+  // parcelas de compras parceladas: mesmas regras de check-in, chave "parc:<compra>:<nº da parcela>"
+  parcelasDoMes(k).forEach(function(x){
+    var p=x.p,vIso=isoData(pk.y,pk.m,x.dia),chave="parc:"+p.id+":"+x.i,pg=d.pagos[chave]||null;
+    var status=d.pulados.indexOf(chave)>=0?"pulada":vIso<CHECKIN_DESDE?"auto":pg?"pago":vIso<HOJE_ISO?"vencida":"aberta";
+    out.push({f:{id:chave},k:k,chave:chave,id:chave,desc:(p.desc||"parcelamento")+" ("+x.i+"/"+x.n+")",cat:p.cat||"",
+              tipo:"saida",valor:x.valor,cartao:p.forma==="credito",venc:x.dia,vencIso:vIso,adiadaDe:0,semDia:false,
+              status:status,pago:pg,parcela:{id:p.id,i:x.i,n:x.n,forma:p.forma,onde:p.onde||""}});
   });
   return out;
 }
@@ -174,9 +183,9 @@ export function abertasNoIntervalo(aIso,bIso){
 }
 
 function itemDaConta(c,dia,valor){
-  return {id:c.id,dia:dia,tipo:c.tipo,valor:valor,desc:c.desc,fixo:true,cartao:c.cartao,
+  return {id:c.id,dia:dia,tipo:c.tipo,valor:valor,desc:c.desc,cat:c.cat,fixo:true,cartao:c.cartao,
           adiadaDe:c.status==="pago"?0:c.adiadaDe,checkin:c.status,chave:c.chave,mesConta:c.k,
-          venc:c.venc,semDia:c.semDia,pagoEm:c.pago?c.pago.data:null};
+          venc:c.venc,semDia:c.semDia,pagoEm:c.pago?c.pago.data:null,parcela:c.parcela||null};
 }
 
 export function fixosDoMes(k){
