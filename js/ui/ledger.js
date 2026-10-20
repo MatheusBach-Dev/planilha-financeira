@@ -68,8 +68,8 @@ export function renderLedger(painel,k,r){
   var fimEl=painel.querySelector(".painel-fim");
   fimEl.textContent=money(r.final);
   fimEl.classList.toggle("neg",r.final<0);
-  // projeção: quanto sobra no fim do mês se gastar a diária, de hoje em diante, em todo dia sem gasto.
-  // Mês que já passou não muda, e sem salário cadastrado não existe diária pra projetar.
+  // projeção: quanto o mês fecha se gastar a diária em todo dia sem gasto (de hoje em diante; mês
+  // que vem, desde o dia 1). Mês que já passou não muda, e sem salário não existe diária pra projetar.
   var proj=k>=HOJE_KEY?saldosGastandoDiaria(k):null;
   if(proj&&Math.abs(proj[proj.length-1]-r.final)<0.005)proj=null;
   // "mês gastando a diária": a tabela tira a diária do saldo desde o dia 1, em todo dia sem gasto
