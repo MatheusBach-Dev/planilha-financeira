@@ -30,6 +30,15 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .painel-fim.neg{color:var(--neg-deep)}
+/* "gastando a diária: fecha com R$ X" embaixo do nome do mês */
+.painel-proj{
+  margin:-4px 0 6px;font-size:11px;color:var(--text-dim);text-align:right;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.painel-proj b{font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+.painel-proj.neg b{color:var(--neg-deep)}
+/* no "mês gastando a diária" a diária de referência conta como gasta */
+.ledger.proj .ref.prev{opacity:.85;color:var(--sea)}
 
 /* ————— ledger ————— */
 table.ledger{width:100%;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -110,3 +119,4 @@ tr.pendente .c-dia>span{color:var(--text-dim)}
   table[data-col="saida"] .c-entrada,table[data-col="saida"] .c-diario,
   table[data-col="diario"] .c-entrada,table[data-col="diario"] .c-saida{display:none}
 }
+.plano .pl.projecao.vermelho>b{color:var(--neg-deep)}

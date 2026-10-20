@@ -181,3 +181,31 @@ export function diariaDe(y,m,d){var x=dadosDia(y,m,d);return x?x.v:null}
 export function diasAteFimDoCiclo(c,y,m,dia){
   return Math.max(1,Math.round((c.fim-new Date(y,m,dia))/86400000)+1);
 }
+
+// ————— "mês gastando a diária" —————
+// saldo de cada dia do mês k se a pessoa gastar a diária em todo dia, de hoje em diante, que ainda
+// não tem gasto lançado. Dia com gasto lançado entra com o valor real; dia que já passou não muda.
+function gastoPrevistoNoDia(y,m,l,hj){
+  if(new Date(y,m,l.dia)<hj||l.diario>0)return 0;
+  var v=diariaDe(y,m,l.dia);
+  return v>0?v:0;
+}
+
+export function saldosGastandoDiaria(k){
+  var hj=hojeZero(),pk=parseKey(k),off=0,a={y:hj.getFullYear(),m:hj.getMonth()},g=0;
+  // o que seria gasto nos meses entre hoje e o mês k
+  while(key(a.y,a.m)<k&&g++<120){
+    var ka=key(a.y,a.m),ra=calcular(ka,inicialDe(ka));
+    ra.linhas.forEach(function(l){off+=gastoPrevistoNoDia(a.y,a.m,l,hj)});
+    a=somaMes(a,1);
+  }
+  var r=calcular(k,inicialDe(k));
+  return r.linhas.map(function(l){
+    off+=gastoPrevistoNoDia(pk.y,pk.m,l,hj);
+    return cent(l.saldo-off);
+  });
+}
+
+export function saldoGastandoDiaria(dt){
+  return saldosGastandoDiaria(key(dt.getFullYear(),dt.getMonth()))[dt.getDate()-1];
+}

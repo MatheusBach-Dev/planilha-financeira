@@ -1,6 +1,6 @@
 import {planoCiclo} from "../core/aperto.js";
 import {calcular, fixoAtivo, inicialDe, limparCache} from "../core/calculo.js";
-import {infoCiclo, montarDiarias} from "../core/ciclo.js";
+import {infoCiclo, montarDiarias, saldoGastandoDiaria} from "../core/ciclo.js";
 import {HOJE_KEY, fmtDia, fmtDiaSem, key, maisDias, somaMes} from "../core/datas.js";
 import {state, ui} from "../core/estado.js";
 import {$, MESES, esc, money} from "../core/formato.js";
@@ -143,6 +143,9 @@ export function renderPlano(p,ciclo){
     l.push('<div class="pl sepagar"><span>se pagar as contas que faltam ('+money(p.aPagar)+'), a diária fica</span><b>'+money(p.diariaSePagar)+'</b></div>');
   if(Math.abs(p.base-p.diaria)>0.005)
     l.push('<div class="pl"><span>sua diária normal</span><b>'+money(p.base)+'</b></div>');
+  // quanto sobra no fim do ciclo se gastar a diária em todo dia que ainda não tem gasto anotado
+  var proj=saldoGastandoDiaria(ciclo.fim)-(ciclo.devendo||0);
+  l.push('<div class="pl projecao'+(proj<0?' vermelho':'')+'"><span>gastando a diária todo dia, você fecha o ciclo com</span><b>'+money(proj)+'</b></div>');
   if(!p.pre){
     l.push('<div class="pl"><span>investir neste ciclo'+(p.pctG?" ("+p.pctG+"%)":"")+'</span><b>'+
       (p.metaBatida

@@ -22,8 +22,8 @@ Você pode:
 
 Você não pode mudar salário, contas fixas, metas nem configurações. Se pedirem, diga que isso é feito na aba perfil.
 
-Tipos de lançamento (na tela do app, "diario" aparece como "diária" e "saida" como "conta"):
-- diario: tudo que a pessoa escolhe gastar, todo dia ou de vez em quando (comida, transporte, rolê, mercado, hortifruti, Pix, compra online). Use este quando a pessoa disser só "gastei", "paguei" ou "comprei", ou falar em "diária".
+Tipos de lançamento (na tela do app, "diario" aparece como "gasto" e "saida" como "conta"):
+- diario: tudo que a pessoa escolhe gastar, todo dia ou de vez em quando (comida, transporte, rolê, mercado, hortifruti, Pix, compra online). Use este quando a pessoa disser só "gastei", "paguei" ou "comprei", ou falar em "gasto".
 - saida: conta com data marcada (aluguel, luz, parcela, boleto, assinatura). Use quando ela falar em "conta".
 - entrada: dinheiro que entrou fora do salário (freela, venda, reembolso, presente).
 - economia: dinheiro guardado ou investido.

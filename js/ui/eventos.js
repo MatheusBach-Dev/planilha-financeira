@@ -8,7 +8,6 @@ import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagam
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {cliqueInvestir, mudancaInvestir} from "./investir.js";
-import {aplicarColuna} from "./ledger.js";
 import {escolherMeses, render, trocarLateral} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
@@ -164,6 +163,6 @@ scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
     }
     if(e.target.closest&&e.target.closest("#sheet")){atualizaParcelamento();return atualizaAvisoFixo()}
     if(e.target.id==="qtdSel")return escolherMeses(e.target.value);
-    if(e.target.id==="colSel")return aplicarColuna();
+    if(e.target.id==="colSel")return render();
   });
 }

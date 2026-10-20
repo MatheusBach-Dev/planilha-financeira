@@ -32,7 +32,7 @@ export function renderCategorias(r){
         '<b>'+money(x.valor)+' <i>'+num(pct)+'%</i></b></div>'+
         '<div class="bar"><i style="width:'+pct.toFixed(1)+'%;background:'+cor(x.tipos)+'"></i></div></div>';
     }).join("")+
-    '<p class="hint" style="margin-top:12px">Soma contas, diárias e investimento do mês. Entradas ficam de fora.</p></section>';
+    '<p class="hint" style="margin-top:12px">Soma contas, gastos e investimento do mês. Entradas ficam de fora.</p></section>';
 }
 
 export function renderMes(r,ciclo,plano){
@@ -74,7 +74,7 @@ export function renderMes(r,ciclo,plano){
       '</section><section class="bloco"><h2>'+MESES[ui.atual.m]+'</h2>'
     ):'<section class="bloco"><h2>'+(ciclo&&plano?MESES[ui.atual.m]:"como o mês está indo")+'</h2>')+
     metric("Sobra do mês",sobrou>=0?"sobrou dinheiro":"faltou dinheiro",money(sobrou),sobrou>=0?"good":"bad",
-           "entradas menos contas, diárias e investimento")+
+           "entradas menos contas, gastos e investimento")+
     metric("Gasto médio por dia",base?("média dos "+base+" dias já corridos"):"nenhum dia corrido ainda",
            money(medio),medio<=ui.permitido?"good":"bad",
            medio>ui.permitido?"acima do que dá pra gastar":"dentro do que dá pra gastar")+
@@ -88,7 +88,7 @@ export function renderMes(r,ciclo,plano){
     '</section>'+secContas()+'<section class="bloco"><h2>movimentações</h2>'+
     mov("Entradas","var(--pos-deep)",r.total.entrada)+
     mov("Contas","var(--neg-deep)",r.total.saida)+
-    mov("Diárias (gastos do dia)","var(--sea)",r.total.diario)+
+    mov("Gastos do dia","var(--sea)",r.total.diario)+
     mov("Investido","var(--text-dim)",r.total.economia)+
     mov("No cartão","var(--text-dim)",r.total.cartao)+
     '</section>'+renderCategorias(r)+
