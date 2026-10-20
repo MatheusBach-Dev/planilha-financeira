@@ -88,15 +88,25 @@ export function abrirParcelamento(id,prefill){
   atualizaParcelamento();
 }
 
-// lê o formulário; os valores diferentes vêm da lista de parcelas (inputs data-parcval)
+// lê o formulário; os valores diferentes vêm da lista de parcelas (inputs data-parcval).
+// Só conta como valor diferente o que a pessoa mudou na lista: a lista é refeita enquanto ela digita o
+// valor de cada parcela (0,01 → 0,10 → 1,00…) e esses números de passagem não podem virar exceção.
 export function lerFormParcelamento(){
-  var valores={};
-  document.querySelectorAll("#pcLista [data-parcval]").forEach(function(inp){valores[inp.dataset.parcval]=lerMoney(inp)});
+  var parcela=lerMoney($("pcParcela")),valores={};
   var p=fe.parcEditando?listaParcelamentos().filter(function(x){return x.id===fe.parcEditando})[0]:null;
+  var antigos=p&&p.valores||{},mesmaBase=p&&Math.abs((+p.parcela||0)-parcela)<0.005;
+  document.querySelectorAll("#pcLista [data-parcval]").forEach(function(inp){
+    var i=inp.dataset.parcval;
+    if(inp.value!==inp.dataset.base)valores[i]=lerMoney(inp);
+    else if(mesmaBase&&antigos[i]!=null)valores[i]=+antigos[i];
+  });
   // parcela já paga não tem input: mantém o valor diferente que ela já tinha
-  if(p)Object.keys(p.valores||{}).forEach(function(i){if(!(i in valores))valores[i]=p.valores[i]});
+  Object.keys(antigos).forEach(function(i){
+    if(!(i in valores)&&!document.querySelector('#pcLista [data-parcval="'+i+'"]'))valores[i]=antigos[i]});
+  // valor igual ao de cada parcela não é exceção
+  Object.keys(valores).forEach(function(i){if(Math.abs((+valores[i]||0)-parcela)<0.005)delete valores[i]});
   return {id:fe.parcEditando||null,desc:$("pcDesc").value,onde:$("pcOnde").value,cat:$("pcCat").value,forma:fe.parcForma,
-          aVista:lerMoney($("pcAVista"))||null,n:+$("pcN").value,parcela:lerMoney($("pcParcela")),
+          aVista:lerMoney($("pcAVista"))||null,n:+$("pcN").value,parcela:parcela,
           jaPagas:+$("pcJa").value||0,primeira:$("pcPrimeira").value,dia:+$("pcDia").value,valores:valores};
 }
 
@@ -131,7 +141,7 @@ export function atualizaParcelamento(){
       var txt=paga?"paga"+(c.pago?" dia "+fmtIso(c.pago.data):""):st==="vencida"?"atrasada":st==="pulada"?"não vai pagar":"a pagar";
       return '<div class="parc-linha '+st+'"><span>'+x.i+'/'+r.n+' · '+mesExtenso(x.mes)+' · '+txt+'</span>'+
         (paga?'<b>'+money(c.pago?c.pago.valor:x.valor)+'</b>'
-             :'<input inputmode="numeric" data-money data-parcval="'+x.i+'" value="'+num(valorDaParcela(tmp,x.i))+'" aria-label="valor da parcela '+x.i+'">')+
+             :'<input inputmode="numeric" data-money data-parcval="'+x.i+'" data-base="'+num(valorDaParcela(tmp,x.i))+'" value="'+num(valorDaParcela(tmp,x.i))+'" aria-label="valor da parcela '+x.i+'">')+
         '</div>';
     }).join("");
   aplicarMascara(lista);
