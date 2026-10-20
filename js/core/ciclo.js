@@ -183,10 +183,12 @@ export function diasAteFimDoCiclo(c,y,m,dia){
 }
 
 // ————— "mês gastando a diária" —————
-// saldo de cada dia se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado
-// (dia com gasto lançado entra com o valor real), contando a partir de ini.
+// saldo de cada dia se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado,
+// contando a partir de ini. Dia com gasto lançado entra com o valor real, e dia que já passou e foi
+// marcado como anotado também: se não tem gasto, é porque não gastou.
 function gastoPrevistoNoDia(y,m,l,ini){
-  if(new Date(y,m,l.dia)<ini||l.diario>0)return 0;
+  var dt=new Date(y,m,l.dia);
+  if(dt<ini||l.diario>0||(l.conferido&&dt<hojeZero()))return 0;
   var v=diariaDe(y,m,l.dia);
   return v>0?v:0;
 }
