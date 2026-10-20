@@ -183,25 +183,27 @@ export function diasAteFimDoCiclo(c,y,m,dia){
 }
 
 // ————— "mês gastando a diária" —————
-// saldo de cada dia do mês k se a pessoa gastar a diária em todo dia, de hoje em diante, que ainda
-// não tem gasto lançado. Dia com gasto lançado entra com o valor real; dia que já passou não muda.
-function gastoPrevistoNoDia(y,m,l,hj){
-  if(new Date(y,m,l.dia)<hj||l.diario>0)return 0;
+// saldo de cada dia do mês k se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado.
+// Dia com gasto lançado entra com o valor real. Por padrão conta de hoje em diante; com doDia1,
+// conta desde o dia 1 do mês de hoje (ou do mês k, se ele já passou), pra tabela descer dia a dia.
+function gastoPrevistoNoDia(y,m,l,ini){
+  if(new Date(y,m,l.dia)<ini||l.diario>0)return 0;
   var v=diariaDe(y,m,l.dia);
   return v>0?v:0;
 }
 
-export function saldosGastandoDiaria(k){
+export function saldosGastandoDiaria(k,doDia1){
   var hj=hojeZero(),pk=parseKey(k),off=0,a={y:hj.getFullYear(),m:hj.getMonth()},g=0;
+  var ini=!doDia1?hj:k<key(a.y,a.m)?new Date(pk.y,pk.m,1):new Date(a.y,a.m,1);
   // o que seria gasto nos meses entre hoje e o mês k
   while(key(a.y,a.m)<k&&g++<120){
     var ka=key(a.y,a.m),ra=calcular(ka,inicialDe(ka));
-    ra.linhas.forEach(function(l){off+=gastoPrevistoNoDia(a.y,a.m,l,hj)});
+    ra.linhas.forEach(function(l){off+=gastoPrevistoNoDia(a.y,a.m,l,ini)});
     a=somaMes(a,1);
   }
   var r=calcular(k,inicialDe(k));
   return r.linhas.map(function(l){
-    off+=gastoPrevistoNoDia(pk.y,pk.m,l,hj);
+    off+=gastoPrevistoNoDia(pk.y,pk.m,l,ini);
     return cent(l.saldo-off);
   });
 }

@@ -68,11 +68,13 @@ export function renderLedger(painel,k,r){
   var fimEl=painel.querySelector(".painel-fim");
   fimEl.textContent=money(r.final);
   fimEl.classList.toggle("neg",r.final<0);
-  // projeção: quanto sobra no fim do mês se gastar a diária em todo dia que ainda não tem gasto.
+  // projeção: quanto sobra no fim do mês se gastar a diária, de hoje em diante, em todo dia sem gasto.
   // Mês que já passou não muda, e sem salário cadastrado não existe diária pra projetar.
   var proj=k>=HOJE_KEY?saldosGastandoDiaria(k):null;
   if(proj&&Math.abs(proj[proj.length-1]-r.final)<0.005)proj=null;
-  var modoProj=!!proj&&$("colSel").value==="proj";
+  // "mês gastando a diária": a tabela tira a diária do saldo desde o dia 1, em todo dia sem gasto
+  var tabProj=$("colSel").value==="proj"?saldosGastandoDiaria(k,true):null;
+  var modoProj=!!tabProj;
   var prEl=painel.querySelector(".painel-proj"),pf=proj?proj[proj.length-1]:0;
   prEl.hidden=!proj;
   if(proj){
@@ -90,7 +92,7 @@ export function renderLedger(painel,k,r){
 
   var tb=painel.querySelector("tbody");
   var maxPos=0,maxNeg=0;
-  function saldoDe(l,i){return modoProj?proj[i]:l.saldo}
+  function saldoDe(l,i){return modoProj?tabProj[i]:l.saldo}
   r.linhas.forEach(function(l,i){
     var s=saldoDe(l,i);
     if(s>maxPos)maxPos=s;
@@ -158,8 +160,7 @@ export function renderLedger(painel,k,r){
     }else if(refDia!==null){
       var dd=dadosDia(pk.y,pk.m,l.dia);
       spDia.textContent=num(refDia);
-      spDia.className=((dd&&dd.d>0.005)?"ref abatido":(dd&&dd.s>0.005)?"ref somado":"ref")+
-        (k>HOJE_KEY||(k===HOJE_KEY&&l.dia>=HOJE_DIA)?" prev":"");
+      spDia.className=(dd&&dd.d>0.005)?"ref abatido":(dd&&dd.s>0.005)?"ref somado":"ref";
     }else{
       spDia.textContent="–";spDia.className="zero";
     }

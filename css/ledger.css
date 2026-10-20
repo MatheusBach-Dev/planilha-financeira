@@ -38,7 +38,7 @@
 .painel-proj b{font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
 .painel-proj.neg b{color:var(--neg-deep)}
 /* no "mês gastando a diária" a diária de referência conta como gasta */
-.ledger.proj .ref.prev{opacity:.85;color:var(--sea)}
+.ledger.proj .ref{opacity:.85;color:var(--sea)}
 
 /* ————— ledger ————— */
 table.ledger{width:100%;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}
