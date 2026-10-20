@@ -181,3 +181,37 @@ export function diariaDe(y,m,d){var x=dadosDia(y,m,d);return x?x.v:null}
 export function diasAteFimDoCiclo(c,y,m,dia){
   return Math.max(1,Math.round((c.fim-new Date(y,m,dia))/86400000)+1);
 }
+
+// ————— "mês gastando a diária" —————
+// saldo de cada dia se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado
+// (dia com gasto lançado entra com o valor real), contando a partir de ini.
+function gastoPrevistoNoDia(y,m,l,ini){
+  if(new Date(y,m,l.dia)<ini||l.diario>0)return 0;
+  var v=diariaDe(y,m,l.dia);
+  return v>0?v:0;
+}
+
+// Cada mês sozinho, começando do saldo real do dia 1: o que seria gasto num mês não passa pro
+// seguinte. Sem doDia1 conta de hoje em diante (mês que já passou não muda); com doDia1, desde o dia 1.
+export function saldosGastandoDiaria(k,doDia1){
+  var hj=hojeZero(),pk=parseKey(k),dia1=new Date(pk.y,pk.m,1),off=0;
+  var ini=doDia1||dia1>hj?dia1:hj;
+  return calcular(k,inicialDe(k)).linhas.map(function(l){
+    off+=gastoPrevistoNoDia(pk.y,pk.m,l,ini);
+    return cent(l.saldo-off);
+  });
+}
+
+// saldo no dia dt gastando a diária de hoje até lá (pode atravessar meses, como o ciclo)
+export function saldoGastandoDiaria(dt){
+  var hj=hojeZero(),a={y:hj.getFullYear(),m:hj.getMonth()},k=key(dt.getFullYear(),dt.getMonth()),off=0,g=0;
+  while(key(a.y,a.m)<=k&&g++<120){
+    var ka=key(a.y,a.m),ra=calcular(ka,inicialDe(ka));
+    ra.linhas.forEach(function(l){
+      if(ka===k&&l.dia>dt.getDate())return;
+      off+=gastoPrevistoNoDia(a.y,a.m,l,hj);
+    });
+    a=somaMes(a,1);
+  }
+  return cent(saldoNaData(dt)-off);
+}

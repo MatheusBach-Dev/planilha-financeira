@@ -19,7 +19,7 @@ import {ICONE_MIC, duracao, limparNotaVoz, micHTML, notaVozHTML, ondaHTML, vozSu
 // Só "ver_mes" (pedir outro mês) gasta um segundo pedido.
 
 var TIPOS=["diario","saida","entrada","economia"];
-var NOME_TIPO={entrada:"entrada",saida:"conta",diario:"diária",economia:"investimento"};
+var NOME_TIPO={entrada:"entrada",saida:"conta",diario:"gasto",economia:"investimento"};
 var DIA_SEMANA=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
 // O plano grátis aceita ~8 mil tokens por minuto, e o servidor corta o contexto em 12 mil caracteres.
 // A lista de lançamentos divide este espaço entre os meses; os totais sempre contam tudo.
@@ -357,7 +357,7 @@ function contextoMes(k,refs,espaco){
   var pk=parseKey(k),r=calcular(k,inicialDe(k)),doc=mesLeitura(k),t=r.total;
   var out=["## "+MESES[pk.m]+" de "+pk.y+" ("+k+")",
     "começou com "+n(r.inicial)+" e "+(k<HOJE_KEY?"terminou":"termina")+" com "+n(r.final),
-    "totais do mês: entradas "+n(t.entrada)+", contas "+n(t.saida)+", diárias "+n(t.diario)+
+    "totais do mês: entradas "+n(t.entrada)+", contas "+n(t.saida)+", gastos do dia "+n(t.diario)+
       ", investido "+n(t.economia)+", no cartão "+n(t.cartao)];
 
   var porCat={};

@@ -1,5 +1,5 @@
 import {calcular, inicialDe} from "../core/calculo.js";
-import {cicloDoDia, dadosDia, diariaDe} from "../core/ciclo.js";
+import {cicloDoDia, dadosDia, diariaDe, saldosGastandoDiaria} from "../core/ciclo.js";
 import {COR_NEGATIVO, corPorPercentual, cssVar, fracaoCor, hex2rgb, lum, mix} from "../core/cores.js";
 import {HOJE_DIA, HOJE_KEY, key, parseKey, somaMes} from "../core/datas.js";
 import {ui} from "../core/estado.js";
@@ -9,7 +9,7 @@ import {ehLargo, mesesNaTela, vista} from "./render.js";
 
 var observador=null;
 
-// "mostrar tudo" (entrada, contas e diária juntas, como na planilha) só existe no computador
+// "mostrar tudo" (entrada, contas e gastos juntos, como na planilha) só existe no computador
 function opcaoTudo(){
   var sel=$("colSel"),quer=ehLargo(),op=sel.querySelector('option[value="tudo"]');
   if(quer&&!op){sel.insertBefore(new Option("mostrar tudo","tudo"),sel.firstChild);sel.value="tudo"}
@@ -19,7 +19,8 @@ function opcaoTudo(){
 // as cinco colunas precisam de uns 300px por mês; abaixo disso o "mostrar tudo" mostra só o diário
 export function aplicarColuna(){
   var cont=$("painels"),pref=$("colSel").value,w=cont.clientWidth/(cont.children.length||1);
-  var col=pref==="tudo"&&w<300?"diario":pref;
+  // "mês gastando a diária" usa as mesmas colunas do "mostrar gastos"
+  var col=pref==="proj"?"diario":pref==="tudo"&&w<300?"diario":pref;
   cont.querySelectorAll("table").forEach(function(t){t.dataset.col=col});
 }
 
@@ -45,9 +46,9 @@ export function renderPaineis(){
     p.className="painel";
     p.innerHTML='<div class="painel-head"><button class="painel-info" type="button">'+
       '<span class="painel-mes"></span><em class="painel-anot"></em></button>'+
-      '<b class="painel-fim"></b></div>'+
+      '<b class="painel-fim"></b></div><p class="painel-proj"></p>'+
       '<table class="ledger"><thead><tr><th>dia</th><th class="c-entrada" title="dinheiro que entrou">entrada</th>'+
-      '<th class="c-saida" title="contas com data (aluguel, boleto, parcela) e dinheiro que você guardou — encolhem o bolo do ciclo">contas</th><th class="c-diario" title="o que você escolheu gastar no dia; em tom apagado, quanto você ainda pode gastar naquele dia">diária</th><th>saldo</th></tr></thead><tbody></tbody></table>';
+      '<th class="c-saida" title="contas com data (aluguel, boleto, parcela) e dinheiro que você guardou — encolhem o bolo do ciclo">contas</th><th class="c-diario" title="o que você escolheu gastar no dia; em tom apagado, quanto você ainda pode gastar naquele dia">gastos</th><th>saldo</th></tr></thead><tbody></tbody></table>';
     cont.appendChild(p);
   }
   for(var i=0;i<n;i++){
@@ -67,6 +68,21 @@ export function renderLedger(painel,k,r){
   var fimEl=painel.querySelector(".painel-fim");
   fimEl.textContent=money(r.final);
   fimEl.classList.toggle("neg",r.final<0);
+  // projeção: quanto o mês fecha se gastar a diária em todo dia sem gasto (de hoje em diante; mês
+  // que vem, desde o dia 1). Mês que já passou não muda, e sem salário não existe diária pra projetar.
+  var proj=k>=HOJE_KEY?saldosGastandoDiaria(k):null;
+  if(proj&&Math.abs(proj[proj.length-1]-r.final)<0.005)proj=null;
+  // "mês gastando a diária": a tabela tira a diária do saldo desde o dia 1, em todo dia sem gasto
+  var tabProj=$("colSel").value==="proj"?saldosGastandoDiaria(k,true):null;
+  var modoProj=!!tabProj;
+  var prEl=painel.querySelector(".painel-proj"),pf=proj?proj[proj.length-1]:0;
+  prEl.hidden=!proj;
+  if(proj){
+    prEl.innerHTML='gastando a diária: fecha com <b>'+money(pf)+'</b>';
+    prEl.classList.toggle("neg",pf<0);
+    prEl.title="Se você gastar a diária todo dia (nos dias que ainda não têm gasto anotado), o mês fecha com "+money(pf)+".";
+  }
+  painel.querySelector("table").classList.toggle("proj",modoProj);
   var anEl=painel.querySelector(".painel-anot");
   if(anEl){
     anEl.textContent=r.total.marcados+" de "+r.dias+" anotados";
@@ -76,9 +92,11 @@ export function renderLedger(painel,k,r){
 
   var tb=painel.querySelector("tbody");
   var maxPos=0,maxNeg=0;
-  r.linhas.forEach(function(l){
-    if(l.saldo>maxPos)maxPos=l.saldo;
-    if(l.saldo<-maxNeg)maxNeg=-l.saldo;
+  function saldoDe(l,i){return modoProj?tabProj[i]:l.saldo}
+  r.linhas.forEach(function(l,i){
+    var s=saldoDe(l,i);
+    if(s>maxPos)maxPos=s;
+    if(s<-maxNeg)maxNeg=-s;
   });
   var neutro=(maxPos===0&&maxNeg===0);
   var pPale=hex2rgb(cssVar("--pos-pale")),pDeep=hex2rgb(cssVar("--pos-deep"));
@@ -146,13 +164,15 @@ export function renderLedger(painel,k,r){
     }else{
       spDia.textContent="–";spDia.className="zero";
     }
-    c[4].firstChild.textContent=num(l.saldo);
+    var sd=saldoDe(l,i);
+    c[4].firstChild.textContent=num(sd);
+    c[4].title=modoProj&&Math.abs(sd-l.saldo)>0.005?"sem gastar a diária: "+money(l.saldo):"";
 
     var bg;
     if(neutro)bg=surf;
-    else if(l.saldo<0)bg=COR_NEGATIVO;
-    else if(refSal>0||cicloDoDia[pk.y+"-"+pk.m+"-"+l.dia])bg=corPorPercentual(fracaoCor(l.saldo,refSal,pk.y,pk.m,l.dia));
-    else bg=mix(pPale,pDeep,maxPos>0?Math.pow(l.saldo/maxPos,.85):0);
+    else if(sd<0)bg=COR_NEGATIVO;
+    else if(refSal>0||cicloDoDia[pk.y+"-"+pk.m+"-"+l.dia])bg=corPorPercentual(fracaoCor(sd,refSal,pk.y,pk.m,l.dia));
+    else bg=mix(pPale,pDeep,maxPos>0?Math.pow(sd/maxPos,.85):0);
     c[4].style.backgroundColor=bg;
     var claro=bg.indexOf("rgb")===0?lum(bg)>0.58:true;
     c[4].firstChild.style.color=neutro?textFg:(claro?"#12263A":tintFg);
