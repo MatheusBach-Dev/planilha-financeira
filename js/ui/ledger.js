@@ -68,12 +68,12 @@ export function renderLedger(painel,k,r){
   var fimEl=painel.querySelector(".painel-fim");
   fimEl.textContent=money(r.final);
   fimEl.classList.toggle("neg",r.final<0);
-  // projeção: quanto o mês fecha se gastar a diária em todo dia sem gasto (de hoje em diante; mês
-  // que vem, desde o dia 1). Mês que já passou não muda, e sem salário não existe diária pra projetar.
-  var proj=k>=HOJE_KEY?saldosGastandoDiaria(k):null;
-  if(proj&&Math.abs(proj[proj.length-1]-r.final)<0.005)proj=null;
-  // "mês gastando a diária": a tabela tira a diária do saldo desde o dia 1, em todo dia sem gasto
-  var tabProj=$("colSel").value==="proj"?saldosGastandoDiaria(k,true):null;
+  // previsão: quanto o mês fecha se gastar a diária todo dia de hoje em diante (vem do mês anterior
+  // quando o ciclo atravessa o mês). Mês que já passou não tem linha; sem salário não existe diária.
+  var todos=saldosGastandoDiaria(k);
+  var proj=k>=HOJE_KEY&&todos.length&&Math.abs(todos[todos.length-1]-r.final)>=0.005?todos:null;
+  // "mês gastando a diária": a tabela mostra essa previsão dia a dia
+  var tabProj=$("colSel").value==="proj"&&todos.length?todos:null;
   var modoProj=!!tabProj;
   var prEl=painel.querySelector(".painel-proj"),pf=proj?proj[proj.length-1]:0;
   prEl.hidden=!proj;
@@ -154,9 +154,15 @@ export function renderLedger(painel,k,r){
     }else{setCel(spSai,l.saida+l.economia,false);spSai.title=""}
     var refDia=diariaDe(pk.y,pk.m,l.dia);
     var spDia=c[3].firstChild;
+    var prevDia=modoProj&&tabProj.previsto?tabProj.previsto[i]:null;
+    spDia.title="";
     if(l.diario){
       spDia.textContent=num(l.diario);
       spDia.className=(refDia!==null&&l.diario>refDia+0.005)?"acima":"";
+      if(prevDia>0.005)spDia.title="gastou "+money(l.diario)+"; a previsão tira mais "+money(prevDia)+" pra completar a diária";
+    }else if(prevDia!=null&&tabProj.previsto&&(k>HOJE_KEY||(k===HOJE_KEY&&l.dia>=HOJE_DIA))){
+      // previsão: a diária normal que sai do saldo neste dia
+      spDia.textContent=num(prevDia);spDia.className="ref";
     }else if(refDia!==null){
       var dd=dadosDia(pk.y,pk.m,l.dia);
       spDia.textContent=num(refDia);
