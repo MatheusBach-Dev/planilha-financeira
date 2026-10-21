@@ -183,14 +183,16 @@ export function diasAteFimDoCiclo(c,y,m,dia){
 }
 
 // ————— "mês gastando a diária" —————
-// saldo de cada dia se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado,
-// contando a partir de ini. Dia com gasto lançado entra com o valor real, e dia que já passou e foi
-// marcado como anotado também: se não tem gasto, é porque não gastou.
+// saldo de cada dia se a pessoa gastar a diária inteira em todo dia, contando a partir de ini.
+// Hoje e os próximos dias: sai o que falta pra completar a diária (gastou 9 de 17,46 → sai mais 8,46).
+// Dia que já passou fica com o valor real se tem gasto ou foi marcado como anotado; sem marcar e
+// sem gasto, o app não sabe se você gastou, então sai a diária.
 function gastoPrevistoNoDia(y,m,l,ini){
   var dt=new Date(y,m,l.dia);
-  if(dt<ini||l.diario>0||(l.conferido&&dt<hojeZero()))return 0;
+  if(dt<ini)return 0;
+  if(dt<hojeZero()&&(l.conferido||l.diario>0))return 0;
   var v=diariaDe(y,m,l.dia);
-  return v>0?v:0;
+  return v>0?Math.max(0,cent(v-l.diario)):0;
 }
 
 // Cada mês sozinho, começando do saldo real do dia 1: o que seria gasto num mês não passa pro
