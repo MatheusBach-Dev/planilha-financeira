@@ -23,6 +23,14 @@
 .min:hover{background:var(--line-soft)}
 .min svg{width:20px;height:20px}
 .min .x{display:none}
+/* clicou fora do card: ele não fecha, o X pulsa pra mostrar onde fechar */
+.min.lembrar{animation:lembrarX .7s ease}
+@keyframes lembrarX{
+  0%,100%{transform:scale(1);box-shadow:0 0 0 0 transparent}
+  30%{transform:scale(1.15);box-shadow:0 0 0 5px color-mix(in srgb,var(--sea) 40%,transparent)}
+  60%{transform:scale(.97)}
+}
+@media (prefers-reduced-motion: reduce){.min.lembrar{animation:none;box-shadow:0 0 0 3px var(--sea)}}
 .sheet h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 3px}
 .sh-sub{color:var(--text-dim);font-size:12.5px;margin:0 0 16px;line-height:1.5}
 .seg{display:flex;gap:6px;margin-bottom:15px}

@@ -14,12 +14,18 @@ import {toast} from "./toast.js";
 import {cancelarVoz, gravandoVoz, ligarVoz, terminarVoz} from "./voz.js";
 
 export function ligarEventos(){
-scrim.addEventListener("click",function(e){if(e.target===scrim)fecharSheet()});
+  // O card só fecha pelo X: clicar fora (ou começar um clique dentro e soltar fora, sem querer)
+  // não perde o que a pessoa digitou. Só faz o X pulsar pra mostrar onde fechar.
+  scrim.addEventListener("click",function(e){
+    if(e.target!==scrim)return;
+    var x=document.getElementById("minSheet");
+    if(!x)return;
+    x.classList.remove("lembrar");void x.offsetWidth;x.classList.add("lembrar");
+  });
   ligarVoz(enviarAudioIA);
   document.addEventListener("keydown",function(e){
     if(e.key!=="Escape")return;
     if(gravandoVoz())return cancelarVoz();
-    fecharSheet();
   });
   document.addEventListener("click",function(e){
     var t=e.target.closest("[data-tab]");
