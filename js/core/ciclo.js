@@ -183,37 +183,54 @@ export function diasAteFimDoCiclo(c,y,m,dia){
 }
 
 // ————— "mês gastando a diária" —————
-// saldo de cada dia se a pessoa gastar a diária em todo dia que ainda não tem gasto lançado,
-// contando a partir de ini. Dia com gasto lançado entra com o valor real, e dia que já passou e foi
-// marcado como anotado também: se não tem gasto, é porque não gastou.
-function gastoPrevistoNoDia(y,m,l,ini){
+// Previsão: saldo de cada dia se a pessoa gastar a diária todo dia, de hoje até o fim do ciclo e além.
+// - Hoje sai o que falta pra completar a diária de hoje (gastou 10 de 23,40 → sai mais 13,40).
+// - Dos próximos dias sai a diária normal do ciclo, sempre igual: se você gastar a mais hoje, a
+//   previsão não diminui a diária de amanhã pra compensar, e o excesso aparece no número final.
+// - Ciclo que ainda vai começar tem a diária refeita a partir do saldo previsto (o app calcula a
+//   diária dele com o dinheiro de hoje, que na previsão já foi gasto).
+// - Dia que já passou fica com o valor real.
+function diaPrevisto(y,m,l,hj,est){
   var dt=new Date(y,m,l.dia);
-  if(dt<ini||l.diario>0||(l.conferido&&dt<hojeZero()))return 0;
-  var v=diariaDe(y,m,l.dia);
-  return v>0?v:0;
+  if(dt<hj)return 0;
+  var ch=y+"-"+m+"-"+l.dia,dd=mapaDiaria[ch],c=cicloDoDia[ch];
+  if(!dd||!c)return 0;
+  if(c!==est.ciclo){
+    // primeiro dia de outro ciclo: tira da diária dele o que a previsão já gastou até aqui
+    est.corr=est.ciclo?est.off/Math.max(1,c.dias):0;
+    est.ciclo=c;
+  }
+  var v=+dt===+hj||(dd.plano&&dt>=dd.plano.apIni)?dd.v:Math.max(0,dd.b-est.corr);
+  return Math.max(0,cent(v-l.diario));
 }
 
-// Cada mês sozinho, começando do saldo real do dia 1: o que seria gasto num mês não passa pro
-// seguinte. Sem doDia1 conta de hoje em diante (mês que já passou não muda); com doDia1, desde o dia 1.
-export function saldosGastandoDiaria(k,doDia1){
-  var hj=hojeZero(),pk=parseKey(k),dia1=new Date(pk.y,pk.m,1),off=0;
-  var ini=doDia1||dia1>hj?dia1:hj;
+// mês que já passou: só ele, desde o dia 1; dia sem gasto e sem marcar conta como se tivesse gasto a diária
+function mesPassadoGastandoDiaria(k){
+  var pk=parseKey(k),off=0;
   return calcular(k,inicialDe(k)).linhas.map(function(l){
-    off+=gastoPrevistoNoDia(pk.y,pk.m,l,ini);
+    if(!l.conferido&&!(l.diario>0)){var v=diariaDe(pk.y,pk.m,l.dia);if(v>0)off+=v}
     return cent(l.saldo-off);
   });
 }
 
-// saldo no dia dt gastando a diária de hoje até lá (pode atravessar meses, como o ciclo)
-export function saldoGastandoDiaria(dt){
-  var hj=hojeZero(),a={y:hj.getFullYear(),m:hj.getMonth()},k=key(dt.getFullYear(),dt.getMonth()),off=0,g=0;
+export function saldosGastandoDiaria(k){
+  var hj=hojeZero(),a={y:hj.getFullYear(),m:hj.getMonth()};
+  if(k<key(a.y,a.m))return mesPassadoGastandoDiaria(k);
+  // out.previsto[i] = quanto a previsão tira no dia i+1 (além do gasto já anotado)
+  var est={off:0,corr:0,ciclo:null},g=0,out=null;
   while(key(a.y,a.m)<=k&&g++<120){
-    var ka=key(a.y,a.m),ra=calcular(ka,inicialDe(ka));
-    ra.linhas.forEach(function(l){
-      if(ka===k&&l.dia>dt.getDate())return;
-      off+=gastoPrevistoNoDia(a.y,a.m,l,hj);
+    var ka=key(a.y,a.m),ano=a.y,mes=a.m,prev=[];
+    var linhas=calcular(ka,inicialDe(ka)).linhas.map(function(l){
+      var p=diaPrevisto(ano,mes,l,hj,est);
+      prev.push(p);est.off+=p;
+      return cent(l.saldo-est.off);
     });
+    if(ka===k){out=linhas;out.previsto=prev}
     a=somaMes(a,1);
   }
-  return cent(saldoNaData(dt)-off);
+  return out||[];
+}
+
+export function saldoGastandoDiaria(dt){
+  return saldosGastandoDiaria(key(dt.getFullYear(),dt.getMonth()))[dt.getDate()-1];
 }
