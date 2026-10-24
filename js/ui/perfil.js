@@ -1,6 +1,6 @@
 import { diaDoFixo, fixoEncerrado, historicoAte, textoPeriodoFixo, textoRegraFixo } from "../core/calculo.js";
 import { HOJE_KEY, somaMes } from "../core/datas.js";
-import { state, ui } from "../core/estado.js";
+import { padraoConfig, state, ui } from "../core/estado.js";
 import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
 import { diaPagamento, mesExtenso, temPagamento, textoRegraPag } from "../core/pagamento.js";
 import { sessao } from "../dados/sessao.js";
@@ -12,6 +12,19 @@ export function atualizaSaveBar() {
   var b = $("btnSalvarCfg");
   if (!b) return;
   b.firstChild.textContent = "Salvar alterações";
+}
+
+// o nome que vinha pronto pra todo mundo não conta como escolhido
+function nomeEscolhido() {
+  var c = String(state.config.nome || "").trim();
+  return c && c !== padraoConfig.nome ? c : "";
+}
+function nomeGoogle() {
+  return sessao.user && sessao.user.displayName ? String(sessao.user.displayName).trim() : "";
+}
+// o que a pessoa escreveu em "Seu nome"; senão o nome da conta Google
+export function nomeExibido() {
+  return nomeEscolhido() || nomeGoogle() || "saldos";
 }
 
 export function renderSet() {
@@ -30,7 +43,9 @@ export function renderSet() {
       '<small>' + esc(sessao.user.email || "") + '</small></div><button class="rm" id="btnSair">sair</button></div>' +
   '<p class="hint" style="margin-top:-10px">Seus dados ficam nesta conta. Entre pelo celular ou por outro computador e os números são os mesmos.</p>' : '') +
     '<h2>configurações</h2><p class="hint">Vale para todos os meses.</p>' +
-    '<label class="fld"><span>Seu nome</span><input type="text" data-set="nome" value="' + esc(c.nome || "") + '"></label>' +
+    '<label class="fld"><span>Seu nome</span><input type="text" data-set="nome" value="' + esc(nomeEscolhido() || nomeGoogle()) + '"' +
+      (nomeGoogle() ? ' placeholder="' + esc(nomeGoogle()) + '"' : '') + '></label>' +
+    (nomeGoogle() ? '<p class="hint" style="margin-top:-6px">Vem da sua conta Google. Troque se quiser aparecer com outro nome; apague pra voltar ao do Google.</p>' : '') +
     '<div class="row2">' + fldValor("Saldo inicial", "saldoInicial", c.saldoInicial) +
     '<label class="fld"><span>A partir do mês</span><input type="month" data-set="saldoInicialMes" value="' + esc(c.saldoInicialMes || HOJE_KEY) + '"></label></div>' +
     '<p class="hint" style="margin-top:-6px">Quanto você tinha no primeiro dia desse mês. Daí em diante cada mês começa com o fechamento do anterior.</p>' +
