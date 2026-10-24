@@ -11,7 +11,7 @@ import {montarLateral} from "./ia.js";
 import {renderInvestir} from "./investir.js";
 import {renderPaineis} from "./ledger.js";
 import {renderMes} from "./mes.js";
-import {avatarHTML, renderSet} from "./perfil.js";
+import {avatarHTML, nomeExibido, renderSet} from "./perfil.js";
 
 export var mqLargo=window.matchMedia("(min-width:1100px)");
 
@@ -50,7 +50,9 @@ export function render(){
   var plano=planoCiclo(ciclo);
   ui.permitido=plano?(plano.base||plano.diaria):r.permitido;
 
-  $("brandName").textContent=state.config.nome||"saldos";
+  var nome=nomeExibido();
+  $("brandName").textContent=nome;
+  document.title=nome==="saldos"?"saldos":"saldos — "+nome;
   $("btnIA").hidden=!iaDisponivel();
   montarLateral();
   var u=sessao.user,cl=$("contaLateral");
