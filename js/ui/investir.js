@@ -162,8 +162,8 @@ function prazoTxt(meses){
   return meses%12===0?(meses/12)+(meses===12?" ano":" anos"):meses+(meses===1?" mês":" meses");
 }
 
-function kpi(rot,val,sub,dest){
-  return '<div'+(dest?' class="dest"':'')+'><span>'+rot+'</span><b>'+val+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+function kpi(rot,val,sub){
+  return '<div><span>'+rot+'</span><b>'+val+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
 }
 
 function desenharCalc(box){
@@ -177,9 +177,9 @@ function desenharCalc(box){
     nomes={inv:"com juros",ap:"o que você colocou"};
     h='<div class="sim-kpis">'+kpi("Você coloca no total",money(r.aportado),
       [d.inicial>0?money(d.inicial)+" de início":"",d.aporte>0?money(d.aporte)+" por mês":""].filter(Boolean).join(" + "))+
-      kpi("Você teria",money(r.total),"depois de "+prazoTxt(r.meses),true)+
       kpi("Você ganhou de juros",money(r.juros),
-          "+"+pctTxt(r.juros/r.aportado*100)+"% sobre o que você colocou")+'</div>'+
+          "+"+pctTxt(r.juros/r.aportado*100)+"% sobre o que você colocou")+
+      kpi("Você teria",money(r.total),"depois de "+prazoTxt(r.meses))+'</div>'+
       '<p class="sim-comp">Em '+prazoTxt(r.meses)+' a '+taxaDesc+(d.per==="ano"?" (uns "+taxaTxt(r.taxaMensal)+"% ao mês)":" (uns "+taxaTxt(r.taxaAnual)+"% ao ano)")+
       ', os juros somam <b>'+money(r.juros)+'</b> em cima do que você colocou.</p>';
   }else if(p==="js"){
@@ -187,7 +187,7 @@ function desenharCalc(box){
     if(!(r.capital>0)){box.innerHTML='<p class="sim-vazio">Coloque o valor pra simular.</p>';return}
     nomes={inv:"juros simples",poup:"juros compostos",ap:"valor inicial"};
     h='<div class="sim-kpis">'+kpi("Valor",money(r.capital),"")+
-      kpi("Com juros simples",money(r.total),"+"+money(r.juros)+" de juros",true)+
+      kpi("Com juros simples",money(r.total),"+"+money(r.juros)+" de juros")+
       kpi("Com juros compostos",money(r.totalCompostos),"+"+money(r.jurosCompostos)+" de juros")+'</div>'+
       '<p class="sim-comp">Na mesma taxa ('+taxaDesc+'), os compostos dão <b>'+money(r.totalCompostos-r.total)+'</b> a mais em '+prazoTxt(r.meses)+
       '. No começo a diferença é pequena; com o tempo ela cresce, porque o juro passa a render juro.</p>';
@@ -196,10 +196,10 @@ function desenharCalc(box){
     if(!(r.meta>0)){box.innerHTML='<p class="sim-vazio">Coloque quanto você quer juntar.</p>';return}
     nomes={inv:"juntando",ap:"o que você colocou"};
     h='<div class="sim-kpis">'+(r.jaChega
-        ?kpi("Guardar por mês","R$ 0,00","o que você já tem chega lá sozinho",true)
-        :kpi("Guardar por mês",money(r.aporte),"por "+prazoTxt(r.meses),true))+
-      kpi("Você coloca no total",money(r.aportado),d.inicial>0?"contando os "+money(d.inicial)+" que já tem":"")+
-      kpi("Os juros ajudam com",money(Math.max(0,r.total-r.aportado)),"")+'</div>'+
+        ?kpi("Guardar por mês","R$ 0,00","o que você já tem chega lá sozinho")
+        :kpi("Guardar por mês",money(r.aporte),"por "+prazoTxt(r.meses)))+
+      kpi("Os juros ajudam com",money(Math.max(0,r.total-r.aportado)),"")+
+      kpi("Você coloca no total",money(r.aportado),d.inicial>0?"contando os "+money(d.inicial)+" que já tem":"")+'</div>'+
       '<p class="sim-comp">'+(r.jaChega
         ?'Deixando os '+money(d.inicial)+' rendendo a '+taxaDesc+', em '+prazoTxt(r.meses)+' você chega a <b>'+money(r.doInicial)+'</b>, passando da meta.'
         :'Guardando <b>'+money(r.aporte)+'</b> por mês a '+taxaDesc+', você chega a '+money(r.meta)+' em '+prazoTxt(r.meses)+'.')+'</p>';
@@ -240,16 +240,16 @@ export function desenharSimulador(){
   box.innerHTML='<div class="sim-kpis">'+
       '<div><span>Você coloca no total</span><b>'+money(r.aportado)+'</b><small>'+
         (sim.inicial>0?money(sim.inicial)+' de início + ':'')+money(sim.aporte)+' por mês</small></div>'+
-      '<div class="dest"><span>Você teria</span><b>'+money(r.liquido)+'</b><small>'+(ganho>=0?"+":"")+money(ganho)+' de rendimento'+
-        (r.ir>0.005?', já tirando '+money(r.ir)+' de IR':'')+'</small></div>'+
       (temPoup?'<div><span>Na poupança</span><b>'+money(r.poupanca)+'</b></div>':'')+
+      '<div><span>Você teria</span><b>'+money(r.liquido)+'</b><small>'+(ganho>=0?"+":"")+money(ganho)+' de rendimento'+
+        (r.ir>0.005?', já tirando '+money(r.ir)+' de IR':'')+'</small></div>'+
     '</div>'+
     (temPoup?'<p class="sim-comp">'+(r.ganhoSobrePoupanca>=0
       ?'<b>'+money(r.ganhoSobrePoupanca)+'</b> a mais do que deixando na poupança.'
       :'<b>'+money(-r.ganhoSobrePoupanca)+'</b> a menos que a poupança: com essa taxa, a poupança renderia mais.')+'</p>':'')+
     '<div class="sim-leg"><span><i class="k-inv"></i>seu investimento</span>'+(temPoup?'<span><i class="k-poup"></i>poupança</span>':'')+
       '<span><i class="k-ap"></i>o que você colocou</span></div>'+
-    '<div class="sim-graf" id="simGraf"></div>'+fonteSimulacao(r)+tabelaSimulacao(r);
+    '<div class="sim-graf" id="simGraf"></div>'+tabelaJuros(r)+fonteSimulacao(r);
   desenharGrafico($("simGraf"),r,{inv:"seu investimento",poup:"poupança",ap:"você colocou"});
 }
 
@@ -266,14 +266,19 @@ function fonteSimulacao(r){
   return '<p class="sim-fonte">'+esc(p.join(" "))+'</p>';
 }
 
-function tabelaSimulacao(r){
-  var passo=r.meses<=12?3:r.meses<=36?6:12,linhas=r.serie.filter(function(x){return x.mes%passo===0||x.mes===r.meses});
-  return '<details class="sim-tab"><summary>ver em tabela</summary><table><thead><tr><th>mês</th><th>você colocou</th>'+
-    '<th>seu investimento</th>'+(r.poupanca!=null?'<th>poupança</th>':'')+'</tr></thead><tbody>'+
-    linhas.map(function(x){
-      return '<tr><td>'+x.mes+'</td><td>'+money(x.aportado)+'</td><td>'+money(x.liquido)+'</td>'+
-        (r.poupanca!=null?'<td>'+money(x.poupanca)+'</td>':'')+'</tr>';
-    }).join("")+'</tbody></table></details>';
+// juros de cada mês = quanto o total cresceu tirando o que você colocou naquele mês (já sem IR)
+function tabelaJuros(r){
+  var ant={liquido:0,aportado:0};
+  var linhas=r.serie.map(function(x){
+    var j=(x.liquido-ant.liquido)-(x.aportado-ant.aportado);
+    ant=x;
+    return '<tr><td>'+x.mes+'</td><td>'+money(j)+'</td><td>'+money(x.liquido)+'</td></tr>';
+  }).join("");
+  return '<div class="sim-juros"><p class="sim-juros-tit">Juros de cada mês</p>'+
+    '<p class="hint">É quanto o investimento te paga em cada mês'+(r.ir>0.005?', já tirando o imposto de renda':'')+
+    '. Esse dinheiro você pode sacar e gastar ou deixar lá rendendo. A tabela conta que você deixou.</p>'+
+    '<div class="sim-juros-tab"><table><thead><tr><th>mês</th><th>juros do mês</th><th>total guardado</th></tr></thead>'+
+    '<tbody>'+linhas+'</tbody></table></div></div>';
 }
 
 // ————— gráfico (SVG à mão: linhas de 2px, área de 10%, grade fininha, rótulo só na ponta) —————

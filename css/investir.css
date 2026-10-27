@@ -55,8 +55,6 @@
 .sim-kpis span{display:block;font-size:11.5px;color:var(--text-dim)}
 .sim-kpis b{display:block;margin-top:2px;font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.01em}
 .sim-kpis small{display:block;margin-top:2px;font-size:11px;color:var(--text-dim);line-height:1.4}
-.sim-kpis .dest{border-color:var(--viz-inv)}
-.sim-kpis .dest b{font-size:22px}
 .sim-comp{font-size:13px;margin:0 0 12px}
 .sim-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:6px;font-size:11.5px;color:var(--text-dim)}
 .sim-leg span,.g-dica span{display:inline-flex;align-items:center;gap:6px}
@@ -85,12 +83,16 @@
 .g-dica span{white-space:nowrap}
 .sim-fonte{margin:10px 0 0;font-size:11px;color:var(--text-dim);line-height:1.55}
 .sim-vazio{margin:4px 0 0;padding:14px;font-size:13px;color:var(--text-dim);border:1px dashed var(--line);border-radius:var(--r)}
-.sim-tab{margin-top:10px;font-size:12px}
-.sim-tab summary{cursor:pointer;color:var(--sea);width:max-content}
-.sim-tab table{width:100%;margin-top:8px;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.sim-tab th,.sim-tab td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line-soft)}
-.sim-tab th:first-child,.sim-tab td:first-child{text-align:left}
-.sim-tab th{font-size:11px;font-weight:500;color:var(--text-dim)}
+.sim-juros{margin-top:18px}
+.sim-juros-tit{margin:0 0 2px;font-size:13px;font-weight:600}
+.investir .sim-juros p.hint{margin-bottom:8px}
+.sim-juros-tab{max-height:300px;overflow:auto;border:1px solid var(--line-soft);border-radius:var(--r);background:var(--surface)}
+.sim-juros-tab table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.sim-juros-tab th,.sim-juros-tab td{padding:7px 14px;text-align:right;border-bottom:1px solid var(--line-soft)}
+.sim-juros-tab th:first-child,.sim-juros-tab td:first-child{text-align:left;width:60px}
+.sim-juros-tab th{position:sticky;top:0;background:var(--surface);font-size:11px;font-weight:500;color:var(--text-dim)}
+.sim-juros-tab td:nth-child(2){font-weight:500}
+.sim-juros-tab tr:last-child td{border-bottom:0}
 
 /* ————— onde está seu dinheiro ————— */
 .cart-total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
