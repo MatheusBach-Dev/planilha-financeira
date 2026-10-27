@@ -5,7 +5,7 @@ import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
 import { diaPagamento, mesExtenso, temPagamento, textoRegraPag } from "../core/pagamento.js";
 import { sessao } from "../dados/sessao.js";
 import { rotuloTipo } from "./folhas.js";
-import { carregarInvestir, investirLiberado, modInvest } from "./investir.js";
+import { carregarInvestir, modInvest } from "./investir.js";
 import { secaoParcelamentos } from "./parcelas.js";
 
 export function atualizaSaveBar() {
@@ -29,8 +29,8 @@ export function nomeExibido() {
 
 export function renderSet() {
   var c = state.config, v = $("viewSet");
-  var mi = investirLiberado() ? modInvest() : null;
-  if (investirLiberado() && !mi) carregarInvestir();
+  var mi = modInvest();
+  if (!mi) carregarInvestir();
   var niv = mi && mi.nivelInvestidor ? mi.nivelInvestidor() : null;
   var pags = (c.pagamentos || []).slice().sort(function (a, b) { return (a.desde || "") < (b.desde || "") ? -1 : 1 });
   var fixos = (c.fixos || []).slice().sort(function (a, b) {
@@ -57,7 +57,7 @@ export function renderSet() {
       ? 'O primeiro é quanto do salário você tira pra investir. O segundo é o mínimo que precisa sobrar na véspera do próximo pagamento. Os dois saem da conta antes de o app calcular sua diária.'
       : 'É quanto do salário você tira pra investir: sai da conta antes de o app calcular sua diária. Ligue a reserva se quiser que sempre sobre um mínimo na véspera do próximo pagamento.') + '</p>' +
     (niv ? '<p class="hint indicado">Indicado pra ' + esc(niv.sugerido.faixa) + ': investir <b>' + String(niv.sugerido.pct).replace(".", ",") + '%</b>' +
-      (c.usarReserva ? ' e fechar o ciclo com <b>' + niv.sugerido.fecharPct + '%</b>' : '') + '. Veja mais na aba investir.</p>' : '') +
+      (c.usarReserva ? ' e fechar o ciclo com <b>' + niv.sugerido.fecharPct + '%</b>' : '') + '.</p>' : '') +
     '<label class="fld"><span>Tema</span><select data-set="tema">' + opcoesTema(c.tema) + '</select></label>' +
     '<div class="savebar"><button class="btn w" id="btnSalvarCfg"><span>Salvar alterações</span></button></div>' +
     '</section><section class="bloco"><h2>recebimento</h2>' +

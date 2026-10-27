@@ -1,4 +1,3 @@
-import {corPorPercentual} from "../core/cores.js";
 import {$, esc, money, num} from "../core/formato.js";
 import {abrirSheet, fecharSheet} from "./folhas.js";
 import {aplicarMascara, lerMoney} from "./perfil.js";
@@ -12,34 +11,7 @@ import {toast} from "./toast.js";
 // (a branch do cálculo não entrou), a aba mostra "em breve" e o resto do site segue funcionando.
 var inv=null,invDados=null,taxasDados=null,carregando=null,falhou=false;
 
-// A aba ainda está sendo lapidada: completa só rodando no computador (localhost);
-// no site publicado ela aparece no menu, mas mostra "em breve".
-export function investirLiberado(){
-  var h=location.hostname;
-  return h==="localhost"||h==="127.0.0.1"||h==="[::1]"||/\.localhost$/.test(h);
-}
-
 export function modInvest(){return inv}
-
-function telaEmBreve(){
-  function item(icone,titulo,texto){
-    return '<li><span class="eb-ico" aria-hidden="true">'+icone+'</span><div><b>'+titulo+'</b><small>'+texto+'</small></div></li>';
-  }
-  return '<div class="blocos"><section class="bloco em-breve">'+
-    '<span class="eb-selo">em breve</span>'+
-    '<h2>investir</h2>'+
-    '<p class="eb-tit">Seção em construção</p>'+
-    '<p class="eb-txt">Estamos preparando um lugar pra te ajudar a investir com calma: quanto faz sentido guardar pra sua renda, '+
-    'um caminho passo a passo e um simulador pra ver onde o seu dinheiro chega. Novidades em breve.</p>'+
-    '<ul class="eb-lista">'+
-      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18h16M7 18V12M12 18V8M17 18V5"/></svg>',
-        "Seu nível","quanto guardar, de acordo com o que você ganha")+
-      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/><path d="M7.2 12h2.6M14.2 12h2.6"/></svg>',
-        "Seu caminho","da reserva de emergência aos primeiros investimentos")+
-      item('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5.5-5.5 4 4L20 10"/><path d="M15 10h5v5"/></svg>',
-        "Simulador","quanto o seu dinheiro rende, comparado com a poupança")+
-    '</ul></section></div>';
-}
 
 export function carregarInvestir(){
   if(!carregando)carregando=Promise.all([import("../core/investimentos.js"),import("../dados/investimentos.js"),import("../dados/taxas.js")])
@@ -49,17 +21,15 @@ export function carregarInvestir(){
 }
 
 var sim={inicial:null,aporte:null,meses:12,rende:"100",taxa:"",isento:false};
-var etapaVista=null,invEditando=null,taxas=null,taxasPedidas=false;
+var invEditando=null,taxas=null,taxasPedidas=false;
 
-var TEXTO_ETAPA={
-  reserva:"É o dinheiro do imprevisto: perder o emprego, consertar o carro, uma conta de saúde. Fica num lugar seguro, "+
-    "que você saca no mesmo dia. Com ela pronta, você nunca precisa vender um investimento no pior momento.",
-  rendafixa:"Você empresta dinheiro pro governo ou pra um banco e recebe juros combinados antes. É previsível: "+
-    "as regras ficam claras na entrada. Serve pra objetivos de alguns anos.",
-  variavel:"Você vira sócio de empresas, direto ou por fundos que copiam um índice inteiro (os ETFs). "+
-    "O valor sobe e desce no caminho, por isso é dinheiro pra deixar quieto por muitos anos."
-};
-var TIPO_DA_ETAPA={reserva:"reserva",rendafixa:"rendafixa",variavel:"etf"};
+// calculadoras: tipo escolhido e o que a pessoa digitou em cada uma (fica guardado ao trocar de aba)
+var calc={tipo:"rende",
+  jc:{inicial:1000,aporte:200,taxa:"",per:"ano",tempo:5,un:"anos"},
+  js:{inicial:1000,taxa:"",per:"ano",tempo:5,un:"anos"},
+  jm:{meta:10000,inicial:0,taxa:"",per:"ano",tempo:2,un:"anos"}};
+var TIPOS_CALC=[["rende","quanto rende"],["jc","juros compostos"],["js","juros simples"],["jm","chegar numa meta"]];
+
 var PRAZOS=[[6,"6 meses"],[12,"1 ano"],[24,"2 anos"],[36,"3 anos"],[60,"5 anos"],[120,"10 anos"]];
 
 function pctTxt(v){return String(Math.round(v*10)/10).replace(".",",")}
@@ -87,7 +57,6 @@ function dataBR(iso){var p=String(iso||"").split("-");return p.length===3?p[2]+"
 
 export function renderInvestir(){
   var v=$("viewInvestir");
-  if(!investirLiberado()){v.innerHTML=telaEmBreve();return}
   if(!inv){
     if(!falhou)carregarInvestir();
     v.innerHTML='<div class="blocos"><section class="bloco"><h2>investir</h2><p class="hint">'+
@@ -100,11 +69,9 @@ export function renderInvestir(){
     taxasDados.carregarTaxas().then(function(t){if(t){taxas=t;desenharSimulador()}});
   }
   var foco=document.activeElement&&v.contains(document.activeElement)?document.activeElement.id:null;
-  var t=inv.trilha();
   if(sim.aporte==null)sim.aporte=inv.aporteSugerido()||0;
   if(sim.inicial==null)sim.inicial=inv.totaisInvestidos().total||0;
-  if(etapaVista==null)etapaVista=t.atual||3;
-  v.innerHTML='<div class="blocos">'+secNivel()+secTrilha(t)+secSimulador()+secCarteira()+
+  v.innerHTML='<div class="blocos">'+secSimulador()+secCarteira()+
     '<p class="inv-aviso">Conteúdo educativo: o app explica e simula, mas não recomenda nenhum investimento específico. '+
     'Antes de investir, leia as regras e os custos do produto.</p></div>';
   aplicarMascara(v);
@@ -112,88 +79,19 @@ export function renderInvestir(){
   if(foco&&$(foco))$(foco).focus();
 }
 
-function secNivel(){
-  var n=inv.nivelInvestidor();
-  if(!n)return '<section class="bloco"><h2>seu nível</h2>'+
-    '<p class="hint">Cadastre seu salário no perfil pra ver quanto faz sentido guardar pra sua renda.</p></section>';
-  var idx=Math.max(0,n.niveis.map(function(x){return x.id}).indexOf(n.nivel)),atual=n.niveis[idx];
-  // segmentos de largura igual (é uma escala de ordem); o marcador anda dentro do segmento pelo % guardado
-  var ult=n.niveis[n.niveis.length-1],teto=Math.max(ult.de+10,ult.de*1.5);
-  var p=Math.round(n.pct*10)/10,ini=atual.de,fim=atual.ate==null?teto:atual.ate;
-  var dentro=fim>ini?Math.max(0,Math.min(0.94,(p-ini)/(fim-ini))):0.5;
-  var pos=(idx+dentro)/n.niveis.length*100;
-  var regua='<div class="regua" role="img" aria-label="Seu nível: '+esc(atual.nome)+', guardando '+pctTxt(p)+'% da renda">'+
-    '<div class="regua-faixas">'+n.niveis.map(function(x,i){
-      return '<div class="rf n'+(i+1)+(i===idx?' atual':'')+'"><span>'+esc(x.nome)+'</span></div>';
-    }).join("")+'</div>'+
-    '<div class="regua-marca" style="left:'+Math.max(7,Math.min(93,pos)).toFixed(1)+'%"><em>você · '+pctTxt(p)+'%</em><i></i></div>'+
-    '<div class="regua-cortes">'+n.niveis.map(function(x,i){
-      return '<span style="left:'+(i/n.niveis.length*100)+'%">'+pctTxt(x.de)+'%</span>';
-    }).join("")+'</div></div>';
-  var faixaAtual=0;
-  for(var i=0;i<n.faixas.length;i++){if(n.faixas[i].ate==null||n.renda<=n.faixas[i].ate){faixaAtual=i;break}}
-  var maxPct=Math.max.apply(null,n.faixas.map(function(f){return f.pct}));
-  var escada='<div class="escada" role="table" aria-label="Quanto faz sentido guardar por faixa de renda">'+
-    '<p class="escada-tit">Quanto faz sentido guardar, pela renda</p>'+
-    n.faixas.map(function(f,i){
-      var de=i?n.faixas[i-1].ate:0;
-      var rot=f.ate==null?"mais de "+curto(de):(i?curto(de).replace(" mil","")+" a "+curto(f.ate).replace("R$ ",""):"até "+curto(f.ate));
-      return '<div class="degrau'+(i===faixaAtual?' atual':'')+'" role="row"><span role="cell">'+rot+'</span>'+
-        '<div class="degrau-barra"><i style="width:'+(f.pct/maxPct*100).toFixed(1)+'%"></i></div>'+
-        '<b role="cell">'+f.pct+'%</b>'+(i===faixaAtual?'<em>sua faixa</em>':'')+'</div>';
-    }).join("")+'</div>';
-  return '<section class="bloco"><h2>seu nível</h2>'+
-    '<div class="nivel-topo"><b class="nivel-nome n'+(idx+1)+'">'+esc(atual.nome)+'</b>'+
-    '<span>Você guarda <b>'+money(n.guarda)+'</b> por mês, '+pctTxt(p)+'% da sua renda, '+
-    (n.fonte==="ciclo"?"pelo que você investe neste ciclo.":"pela sua meta de investir.")+'</span></div>'+
-    regua+'<p class="nivel-texto">'+esc(atual.texto)+'</p>'+escada+
-    '<p class="nivel-sug">Pra '+esc(n.sugerido.faixa)+', guardar <b>'+pctTxt(n.sugerido.pct)+'%</b> ('+money(n.sugerido.valor)+
-    ' por mês) já é um bom ritmo. Quanto mais a renda passa do custo de vida, maior a parte que dá pra guardar.</p></section>';
-}
-
-var ICONE_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-var ICONE_CADEADO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-
-function secTrilha(t){
-  var s=t.saude;
-  var cor=s.fracao==null?"var(--text-dim)":corPorPercentual(s.fracao);
-  var saude='<div class="saude"><i style="background:'+cor+'"></i><span>'+(s.emDia
-    ?"Sua planilha está em dia: dá pra seguir no caminho."
-    :"Antes de avançar: "+esc(s.motivos.join(" ")))+'</span></div>';
-  var passos='<ol class="trilha">'+t.etapas.map(function(e){
-    // começou antes da hora (tem dinheiro aqui, mas a etapa anterior não terminou): sem o ✓ de concluída
-    var adiantada=e.feita&&!e.liberada;
-    var est=adiantada?"livre":e.feita?"feita":e.liberada?(e.atual?"atual":"livre"):"bloq";
-    var sub=adiantada?"já tem "+curto(e.tem):e.feita?"feito":e.liberada?(e.atual?"você está aqui":"liberada"):"bloqueada";
-    return '<li class="passo '+est+(e.n===etapaVista?' sel':'')+'"><button type="button" data-etapa="'+e.n+'" aria-pressed="'+(e.n===etapaVista)+'">'+
-      '<span class="passo-n">'+(e.feita&&!adiantada?ICONE_OK:e.liberada||adiantada?e.n:ICONE_CADEADO)+'</span>'+
-      '<span class="passo-t">'+esc(e.titulo)+'</span><small>'+sub+'</small></button></li>';
-  }).join("")+'</ol>';
-  var e=t.etapas[etapaVista-1]||t.etapas[0],c=t.custo,corpo='';
-  if(e.id==="reserva"){
-    corpo+='<div class="meta-barra" role="img" aria-label="'+pctTxt(e.pct)+'% da reserva"><i style="width:'+e.pct.toFixed(1)+'%"></i></div>'+
-      '<p class="meta-txt"><b>'+money(e.tem)+'</b> de '+money(e.meta)+' · '+t.reservaMeses+' meses do seu custo de vida</p>'+
-      '<p class="passo-p">Seu custo por mês ≈ <b>'+money(c.valor)+'</b> ('+money(c.saidas)+' de contas + '+money(c.diaADia)+' do dia a dia)'+
-      (c.fonteDiario==="salario"?'. Estimado pelo seu salário: anote seus gastos pra ficar mais preciso.'
-        :c.fonteDiario==="sem"?'. Cadastre seu salário no perfil pra o app calcular.':'.')+'</p>'+
-      '<label class="fld fld-curto"><span>Quantos meses de reserva</span><select id="reservaSel">'+
-      [3,6,9,12].concat([3,6,9,12].indexOf(t.reservaMeses)<0?[t.reservaMeses]:[]).map(function(m){
-        return '<option value="'+m+'"'+(m===t.reservaMeses?' selected':'')+'>'+m+' meses</option>';
-      }).join("")+'</select></label>';
-  }else if(e.tem>0)corpo+='<p class="passo-p">Você já tem <b>'+money(e.tem)+'</b> aqui.</p>';
-  if(e.bloqueio)corpo+='<p class="passo-bloq"><b>Pra liberar:</b> '+esc(e.bloqueio)+'</p>';
-  else if(!e.feita&&e.id!=="reserva")corpo+='<p class="passo-p">Liberada. Quando começar, anote o investimento em “onde está seu dinheiro”, logo abaixo.</p>';
-  var dica=(inv.TIPOS_INVEST.filter(function(x){return x.id===TIPO_DA_ETAPA[e.id]})[0]||{}).dica;
-  return '<section class="bloco"><h2>seu caminho</h2>'+
-    '<p class="hint">Um passo de cada vez: primeiro a segurança, depois o crescimento.</p>'+saude+passos+
-    '<div class="passo-card"><h3>'+e.n+'. '+esc(e.titulo)+'</h3><p class="passo-p">'+TEXTO_ETAPA[e.id]+'</p>'+corpo+
-    (dica?'<p class="passo-ex">Exemplos desse tipo: '+esc(dica)+'.</p>':'')+'</div></section>';
-}
+function op(v,l,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?' selected':'')+'>'+l+'</option>'}
 
 function secSimulador(){
-  function op(v,l,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?' selected':'')+'>'+l+'</option>'}
-  return '<section class="bloco"><h2>simulador</h2>'+
-    '<p class="hint">E se você investir um pouco todo mês? Mexa nos números e veja onde chega.</p>'+
+  var abas='<div class="seg sim-abas" role="group" aria-label="Escolha o simulador">'+TIPOS_CALC.map(function(t){
+    return '<button type="button" data-simtipo="'+t[0]+'" aria-pressed="'+(calc.tipo===t[0])+'">'+t[1]+'</button>';
+  }).join("")+'</div>';
+  var corpo=calc.tipo==="jc"?formCompostos():calc.tipo==="js"?formSimples():calc.tipo==="jm"?formMeta():formRende();
+  return '<section class="bloco"><h2>simuladores</h2>'+abas+corpo+'<div id="simRes" aria-live="polite"></div></section>';
+}
+
+function formRende(){
+  return '<p class="hint">Quanto o seu dinheiro rende num investimento comum (CDB, Tesouro Selic, caixinha do banco), '+
+    'comparado com a poupança. Já tira o imposto.</p>'+
     '<p class="sim-explica"><b>Já tenho guardado</b> é o que você já investiu e vai deixar rendendo (a caixinha, por exemplo). '+
     '<b>Vou investir por mês</b> é o que sai do salário todo mês e soma por cima. Um não sai do outro.</p>'+
     '<div class="sim-campos">'+
@@ -206,8 +104,112 @@ function secSimulador(){
       '<label class="fld" id="simWrapTaxa"'+(sim.rende==="outra"?'':' hidden')+'><span>Taxa ao ano (%)</span>'+
         '<input id="simTaxa" inputmode="decimal" placeholder="ex.: 12" value="'+esc(sim.taxa)+'"></label>'+
     '</div>'+
-    '<label class="chk"><input type="checkbox" id="simIsento"'+(sim.isento?' checked':'')+'> isento de imposto de renda (como LCI, LCA e poupança)</label>'+
-    '<div id="simRes" aria-live="polite"></div></section>';
+    '<label class="chk"><input type="checkbox" id="simIsento"'+(sim.isento?' checked':'')+'> isento de imposto de renda (como LCI, LCA e poupança)</label>';
+}
+
+// ————— calculadoras —————
+
+function campoTaxa(p,c){
+  return '<label class="fld"><span>Taxa de juros (%)</span><input id="'+p+'Taxa" inputmode="decimal" placeholder="ex.: 1" value="'+esc(c.taxa)+'"></label>'+
+    '<label class="fld"><span>A taxa é</span><select id="'+p+'Per">'+op("mes","ao mês",c.per)+op("ano","ao ano",c.per)+'</select></label>';
+}
+function campoTempo(p,c){
+  return '<label class="fld"><span>Por quanto tempo</span><input id="'+p+'Tempo" type="number" min="1" max="100" step="1" value="'+esc(c.tempo)+'"></label>'+
+    '<label class="fld"><span>Em</span><select id="'+p+'Un">'+op("meses","meses",c.un)+op("anos","anos",c.un)+'</select></label>';
+}
+function campoValor(id,rot,v){return '<label class="fld"><span>'+rot+'</span><input id="'+id+'" inputmode="numeric" data-money value="'+num(v)+'"></label>'}
+
+function formCompostos(){
+  var c=calc.jc;
+  return '<p class="hint">Juros sobre juros: o que rende num mês passa a render também nos meses seguintes. '+
+    'É assim que funciona quase todo investimento (e também as dívidas do cartão).</p>'+
+    '<div class="sim-campos">'+campoValor("jcIni","Valor inicial",c.inicial)+campoValor("jcAporte","Quanto coloca por mês",c.aporte)+
+    campoTaxa("jc",c)+campoTempo("jc",c)+'</div>';
+}
+function formSimples(){
+  var c=calc.js;
+  return '<p class="hint">Juros simples: o rendimento é sempre sobre o valor inicial, então cresce em linha reta. '+
+    'Compare com os compostos na mesma taxa pra ver a diferença com o tempo.</p>'+
+    '<div class="sim-campos">'+campoValor("jsIni","Valor",c.inicial)+campoTaxa("js",c)+campoTempo("js",c)+'</div>';
+}
+function formMeta(){
+  var c=calc.jm;
+  return '<p class="hint">Quanto guardar por mês pra juntar um valor até uma data: uma viagem, um carro, a reserva de emergência.</p>'+
+    '<div class="sim-campos">'+campoValor("jmMeta","Quero juntar",c.meta)+campoValor("jmIni","Já tenho",c.inicial)+
+    campoTaxa("jm",c)+campoTempo("jm",c)+'</div>';
+}
+
+function lerCalc(p){
+  var c=calc[p];
+  if(!$(p+"Taxa"))return null;
+  c.taxa=$(p+"Taxa").value;c.per=$(p+"Per").value;c.tempo=$(p+"Tempo").value;c.un=$(p+"Un").value;
+  if($(p+"Ini"))c.inicial=lerMoney($(p+"Ini"));
+  if($(p+"Aporte"))c.aporte=lerMoney($(p+"Aporte"));
+  if($(p+"Meta"))c.meta=lerMoney($(p+"Meta"));
+  var tx=parseFloat(String(c.taxa).replace(",","."));
+  var meses=Math.round((+c.tempo||0)*(c.un==="anos"?12:1));
+  return {inicial:c.inicial,aporte:c.aporte,meta:c.meta,taxa:tx,per:c.per,meses:meses,ok:isFinite(tx)&&tx>=0&&meses>=1};
+}
+
+// taxa sugerida enquanto o campo está vazio: o CDI do dia (ao ano), senão 10% ao ano
+function taxaPadrao(p){
+  var c=calc[p];
+  if(String(c.taxa).trim()!=="")return;
+  c.taxa=taxas&&taxas.cdi?taxaTxt(taxas.cdi.valor):"10";c.per="ano";
+}
+
+function prazoTxt(meses){
+  return meses%12===0?(meses/12)+(meses===12?" ano":" anos"):meses+(meses===1?" mês":" meses");
+}
+
+function kpi(rot,val,sub,dest){
+  return '<div'+(dest?' class="dest"':'')+'><span>'+rot+'</span><b>'+val+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+}
+
+function desenharCalc(box){
+  var p=calc.tipo,d=lerCalc(p);
+  if(!d)return;
+  if(!d.ok){box.innerHTML='<p class="sim-vazio">Preencha a taxa de juros e por quanto tempo.</p>';return}
+  var taxaDesc=taxaTxt(d.taxa)+"% "+(d.per==="ano"?"ao ano":"ao mês"),r,h,nomes;
+  if(p==="jc"){
+    r=inv.jurosCompostos(d);
+    if(!(r.aportado>0)){box.innerHTML='<p class="sim-vazio">Coloque um valor inicial ou quanto vai colocar por mês.</p>';return}
+    nomes={inv:"com juros",ap:"o que você colocou"};
+    h='<div class="sim-kpis">'+kpi("Você coloca no total",money(r.aportado),
+      [d.inicial>0?money(d.inicial)+" de início":"",d.aporte>0?money(d.aporte)+" por mês":""].filter(Boolean).join(" + "))+
+      kpi("Você teria",money(r.total),"depois de "+prazoTxt(r.meses),true)+
+      kpi("Você ganhou de juros",money(r.juros),
+          "+"+pctTxt(r.juros/r.aportado*100)+"% sobre o que você colocou")+'</div>'+
+      '<p class="sim-comp">Em '+prazoTxt(r.meses)+' a '+taxaDesc+(d.per==="ano"?" (uns "+taxaTxt(r.taxaMensal)+"% ao mês)":" (uns "+taxaTxt(r.taxaAnual)+"% ao ano)")+
+      ', os juros somam <b>'+money(r.juros)+'</b> em cima do que você colocou.</p>';
+  }else if(p==="js"){
+    r=inv.jurosSimples(d);
+    if(!(r.capital>0)){box.innerHTML='<p class="sim-vazio">Coloque o valor pra simular.</p>';return}
+    nomes={inv:"juros simples",poup:"juros compostos",ap:"valor inicial"};
+    h='<div class="sim-kpis">'+kpi("Valor",money(r.capital),"")+
+      kpi("Com juros simples",money(r.total),"+"+money(r.juros)+" de juros",true)+
+      kpi("Com juros compostos",money(r.totalCompostos),"+"+money(r.jurosCompostos)+" de juros")+'</div>'+
+      '<p class="sim-comp">Na mesma taxa ('+taxaDesc+'), os compostos dão <b>'+money(r.totalCompostos-r.total)+'</b> a mais em '+prazoTxt(r.meses)+
+      '. No começo a diferença é pequena; com o tempo ela cresce, porque o juro passa a render juro.</p>';
+  }else{
+    r=inv.aporteParaMeta(d);
+    if(!(r.meta>0)){box.innerHTML='<p class="sim-vazio">Coloque quanto você quer juntar.</p>';return}
+    nomes={inv:"juntando",ap:"o que você colocou"};
+    h='<div class="sim-kpis">'+(r.jaChega
+        ?kpi("Guardar por mês","R$ 0,00","o que você já tem chega lá sozinho",true)
+        :kpi("Guardar por mês",money(r.aporte),"por "+prazoTxt(r.meses),true))+
+      kpi("Você coloca no total",money(r.aportado),d.inicial>0?"contando os "+money(d.inicial)+" que já tem":"")+
+      kpi("Os juros ajudam com",money(Math.max(0,r.total-r.aportado)),"")+'</div>'+
+      '<p class="sim-comp">'+(r.jaChega
+        ?'Deixando os '+money(d.inicial)+' rendendo a '+taxaDesc+', em '+prazoTxt(r.meses)+' você chega a <b>'+money(r.doInicial)+'</b>, passando da meta.'
+        :'Guardando <b>'+money(r.aporte)+'</b> por mês a '+taxaDesc+', você chega a '+money(r.meta)+' em '+prazoTxt(r.meses)+'.')+'</p>';
+  }
+  box.innerHTML=h+'<div class="sim-leg"><span><i class="k-inv"></i>'+nomes.inv+'</span>'+(nomes.poup?'<span><i class="k-poup"></i>'+nomes.poup+'</span>':'')+
+      '<span><i class="k-ap"></i>'+nomes.ap+'</span></div><div class="sim-graf" id="simGraf"></div>'+
+    '<p class="sim-fonte">'+(p==="js"?'Juros simples: taxa ao ano dividida por 12, sempre sobre o valor inicial. ':
+      'Conta com o dinheiro colocado no fim de cada mês, sem imposto de renda nem taxas. ')+
+    'É uma simulação educativa: o rendimento de verdade muda com o tempo.</p>';
+  desenharGrafico($("simGraf"),r,nomes);
 }
 
 function lerSimulador(){
@@ -220,7 +222,9 @@ function lerSimulador(){
 
 export function desenharSimulador(){
   var box=$("simRes");
-  if(!box||!lerSimulador())return;
+  if(!box)return;
+  if(calc.tipo!=="rende"){desenharCalc(box);return}
+  if(!lerSimulador())return;
   $("simWrapTaxa").hidden=sim.rende!=="outra";
   var o={aporteMensal:sim.aporte,valorInicial:sim.inicial,meses:sim.meses,isento:sim.isento};
   if(sim.rende==="outra"){
@@ -246,7 +250,7 @@ export function desenharSimulador(){
     '<div class="sim-leg"><span><i class="k-inv"></i>seu investimento</span>'+(temPoup?'<span><i class="k-poup"></i>poupança</span>':'')+
       '<span><i class="k-ap"></i>o que você colocou</span></div>'+
     '<div class="sim-graf" id="simGraf"></div>'+fonteSimulacao(r)+tabelaSimulacao(r);
-  desenharGrafico($("simGraf"),r);
+  desenharGrafico($("simGraf"),r,{inv:"seu investimento",poup:"poupança",ap:"você colocou"});
 }
 
 function fonteSimulacao(r){
@@ -279,9 +283,10 @@ function passoBonito(v){
   return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e;
 }
 
-function desenharGrafico(el,r){
+// nomes: {inv, poup (opcional), ap} pras legendas da dica
+function desenharGrafico(el,r,nomes){
   var W=Math.max(280,el.clientWidth||600),H=220,m={t:14,r:92,b:24,l:58};
-  var s=r.serie,n=s.length,temPoup=r.poupanca!=null;
+  var s=r.serie,n=s.length,temPoup=n>0&&s[0].poupanca!=null;
   var maxY=Math.max.apply(null,s.map(function(p){return Math.max(p.liquido,p.aportado,temPoup?p.poupanca:0)}));
   var passo=passoBonito(maxY/3),topo=Math.ceil(maxY/passo)*passo||1;
   function x(i){return m.l+(n>1?i/(n-1):0)*(W-m.l-m.r)}
@@ -303,10 +308,10 @@ function desenharGrafico(el,r){
   g+='<text class="g-rot forte" x="'+(x(n-1)+10).toFixed(1)+'" y="'+(yi+4).toFixed(1)+'">'+curto(fim.liquido)+'</text>';
   if(temPoup&&!juntos)g+='<text class="g-rot" x="'+(x(n-1)+10).toFixed(1)+'" y="'+(yp+4).toFixed(1)+'">'+curto(fim.poupanca)+'</text>';
   g+='<text class="g-eixo" x="'+m.l+'" y="'+(H-6)+'">mês 1</text>'+
-     '<text class="g-eixo" x="'+(W-m.r)+'" y="'+(H-6)+'" text-anchor="end">'+(PRAZOS.filter(function(p){return p[0]===r.meses})[0]||[0,r.meses+" meses"])[1]+'</text>';
+     '<text class="g-eixo" x="'+(W-m.r)+'" y="'+(H-6)+'" text-anchor="end">'+prazoTxt(r.meses)+'</text>';
   g+='<line class="g-mira" id="gMira" y1="'+m.t+'" y2="'+(H-m.b)+'" x1="0" x2="0" visibility="hidden"/>';
-  el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Gráfico: seu investimento chega a '+
-    money(fim.liquido)+(temPoup?', a poupança a '+money(fim.poupanca):'')+' em '+r.meses+' meses">'+g+
+  el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Gráfico: '+nomes.inv+' chega a '+
+    money(fim.liquido)+(temPoup?', '+nomes.poup+' a '+money(fim.poupanca):'')+' em '+prazoTxt(r.meses)+'">'+g+
     '<rect class="g-alvo" x="'+m.l+'" y="'+m.t+'" width="'+(W-m.l-m.r)+'" height="'+(H-m.t-m.b)+'"/></svg>'+
     '<div class="g-dica" id="gDica" hidden></div>';
   var alvo=el.querySelector(".g-alvo"),mira=el.querySelector("#gMira"),dica=el.querySelector("#gDica");
@@ -315,9 +320,9 @@ function desenharGrafico(el,r){
     var i=Math.max(0,Math.min(n-1,Math.round((px-m.l)/((W-m.l-m.r)/Math.max(1,n-1)))));
     var p=s[i],cx=x(i);
     mira.setAttribute("x1",cx);mira.setAttribute("x2",cx);mira.setAttribute("visibility","visible");
-    dica.innerHTML='<b>mês '+p.mes+'</b><span><i class="k-inv"></i>seu investimento '+money(p.liquido)+'</span>'+
-      (temPoup?'<span><i class="k-poup"></i>poupança '+money(p.poupanca)+'</span>':'')+
-      '<span><i class="k-ap"></i>você colocou '+money(p.aportado)+'</span>';
+    dica.innerHTML='<b>mês '+p.mes+'</b><span><i class="k-inv"></i>'+nomes.inv+' '+money(p.liquido)+'</span>'+
+      (temPoup?'<span><i class="k-poup"></i>'+nomes.poup+' '+money(p.poupanca)+'</span>':'')+
+      '<span><i class="k-ap"></i>'+nomes.ap+' '+money(p.aportado)+'</span>';
     dica.hidden=false;
     var esq=cx*(b.width/W)+12;
     if(esq+dica.offsetWidth>b.width)esq=cx*(b.width/W)-dica.offsetWidth-12;
@@ -333,7 +338,7 @@ function desenharGrafico(el,r){
 function secCarteira(){
   var lista=inv.listaInvestimentos(),t=inv.totaisInvestidos();
   var h='<section class="bloco"><h2>onde está seu dinheiro</h2>'+
-    '<p class="hint">Anote o que você já tem investido e atualize o valor de vez em quando. É isso que faz a sua trilha andar.</p>';
+    '<p class="hint">Anote o que você já tem investido e atualize o valor de vez em quando, pra ver tudo num lugar só.</p>';
   if(lista.length){
     h+='<div class="cart-total"><span>total investido</span><b>'+money(t.total)+'</b></div>'+
       '<div class="cart-tipos">'+inv.TIPOS_INVEST.filter(function(tp){return t.porTipo[tp.id]>0}).map(function(tp){
@@ -367,9 +372,9 @@ function itemCarteira(i){
 function achar(id){return inv.listaInvestimentos().filter(function(x){return x.id===id})[0]||null}
 
 export function abrirInvestimento(id){
-  var it=id?achar(id):null,t=inv.trilha();
+  var it=id?achar(id):null;
   invEditando=it?it.id:null;
-  var tipo=it?it.tipo:TIPO_DA_ETAPA[(t.etapas[(t.atual||1)-1]||{}).id]||"reserva";
+  var tipo=it?it.tipo:"reserva";
   abrirSheet('<h3>'+(it?'editar investimento':'anotar investimento')+'</h3>'+
     '<p class="sh-sub">Só pra você acompanhar aqui: o app não mexe no seu dinheiro.</p>'+
     '<label class="fld"><span>Tipo</span><select id="invTipo">'+inv.TIPOS_INVEST.map(function(x){
@@ -410,7 +415,11 @@ function resultado(r){
 export function cliqueInvestir(e){
   if(!inv)return false;
   var t=e.target,b;
-  if((b=t.closest("[data-etapa]"))){etapaVista=+b.dataset.etapa;render();return true}
+  if((b=t.closest("[data-simtipo]"))){
+    calc.tipo=b.dataset.simtipo;
+    if(calc.tipo!=="rende")taxaPadrao(calc.tipo);
+    render();return true;
+  }
   if(t.closest("#invAdd")){abrirInvestimento();return true}
   if((b=t.closest("[data-invval]"))){abrirAtualizarValor(b.dataset.invval);return true}
   if((b=t.closest("[data-invedit]"))){abrirInvestimento(b.dataset.invedit);return true}
@@ -431,13 +440,8 @@ export function cliqueInvestir(e){
 export function mudancaInvestir(e){
   var id=e.target&&e.target.id;
   if(!id||!inv)return false;
-  if(/^sim(Ini|Aporte|Meses|Rende|Taxa|Isento)$/.test(id)){desenharSimulador();return true}
+  if(/^sim(Ini|Aporte|Meses|Rende|Taxa|Isento)$/.test(id)||/^j[csm](Ini|Aporte|Meta|Taxa|Per|Tempo|Un)$/.test(id)){desenharSimulador();return true}
   if(id==="invTipo"){atualizarDica();return true}
-  if(id==="reservaSel"&&e.type==="change"){
-    var r=invDados.definirMesesReserva(+e.target.value);
-    toast(r.msg);if(r.ok)render();
-    return true;
-  }
   return false;
 }
 
