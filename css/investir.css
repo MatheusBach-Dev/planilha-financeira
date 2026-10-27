@@ -55,8 +55,6 @@
 .sim-kpis span{display:block;font-size:11.5px;color:var(--text-dim)}
 .sim-kpis b{display:block;margin-top:2px;font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.01em}
 .sim-kpis small{display:block;margin-top:2px;font-size:11px;color:var(--text-dim);line-height:1.4}
-.sim-kpis .dest{border-color:var(--viz-inv)}
-.sim-kpis .dest b{font-size:22px}
 .sim-comp{font-size:13px;margin:0 0 12px}
 .sim-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:6px;font-size:11.5px;color:var(--text-dim)}
 .sim-leg span,.g-dica span{display:inline-flex;align-items:center;gap:6px}
