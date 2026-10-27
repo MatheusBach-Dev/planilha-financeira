@@ -214,9 +214,11 @@ function desenharCalc(box){
     r=inv.jurosCompostos(d);
     if(!(r.aportado>0)){box.innerHTML='<p class="sim-vazio">Coloque um valor inicial ou quanto vai colocar por mês.</p>';return}
     nomes={inv:"com juros",ap:"o que você colocou"};
-    h='<div class="sim-kpis">'+kpi("Você coloca no total",money(r.aportado),(d.inicial>0?money(d.inicial)+" de início + ":"")+money(d.aporte)+" por mês")+
-      kpi("Você teria",money(r.total),"+"+money(r.juros)+" de juros",true)+
-      kpi("Os juros são",(r.total>0?pctTxt(r.juros/r.total*100):"0")+"%","do valor final")+'</div>'+
+    h='<div class="sim-kpis">'+kpi("Você coloca no total",money(r.aportado),
+      [d.inicial>0?money(d.inicial)+" de início":"",d.aporte>0?money(d.aporte)+" por mês":""].filter(Boolean).join(" + "))+
+      kpi("Você teria",money(r.total),"depois de "+prazoTxt(r.meses),true)+
+      kpi("Você ganhou de juros",money(r.juros),
+          "+"+pctTxt(r.juros/r.aportado*100)+"% sobre o que você colocou")+'</div>'+
       '<p class="sim-comp">Em '+prazoTxt(r.meses)+' a '+taxaDesc+(d.per==="ano"?" (uns "+taxaTxt(r.taxaMensal)+"% ao mês)":" (uns "+taxaTxt(r.taxaAnual)+"% ao ano)")+
       ', os juros somam <b>'+money(r.juros)+'</b> em cima do que você colocou.</p>';
   }else if(p==="js"){
