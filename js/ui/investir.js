@@ -249,7 +249,7 @@ export function desenharSimulador(){
       :'<b>'+money(-r.ganhoSobrePoupanca)+'</b> a menos que a poupança: com essa taxa, a poupança renderia mais.')+'</p>':'')+
     '<div class="sim-leg"><span><i class="k-inv"></i>seu investimento</span>'+(temPoup?'<span><i class="k-poup"></i>poupança</span>':'')+
       '<span><i class="k-ap"></i>o que você colocou</span></div>'+
-    '<div class="sim-graf" id="simGraf"></div>'+fonteSimulacao(r)+tabelaSimulacao(r);
+    '<div class="sim-graf" id="simGraf"></div>'+tabelaJuros(r)+fonteSimulacao(r);
   desenharGrafico($("simGraf"),r,{inv:"seu investimento",poup:"poupança",ap:"você colocou"});
 }
 
@@ -266,14 +266,19 @@ function fonteSimulacao(r){
   return '<p class="sim-fonte">'+esc(p.join(" "))+'</p>';
 }
 
-function tabelaSimulacao(r){
-  var passo=r.meses<=12?3:r.meses<=36?6:12,linhas=r.serie.filter(function(x){return x.mes%passo===0||x.mes===r.meses});
-  return '<details class="sim-tab"><summary>ver em tabela</summary><table><thead><tr><th>mês</th><th>você colocou</th>'+
-    '<th>seu investimento</th>'+(r.poupanca!=null?'<th>poupança</th>':'')+'</tr></thead><tbody>'+
-    linhas.map(function(x){
-      return '<tr><td>'+x.mes+'</td><td>'+money(x.aportado)+'</td><td>'+money(x.liquido)+'</td>'+
-        (r.poupanca!=null?'<td>'+money(x.poupanca)+'</td>':'')+'</tr>';
-    }).join("")+'</tbody></table></details>';
+// juros de cada mês = quanto o total cresceu tirando o que você colocou naquele mês (já sem IR)
+function tabelaJuros(r){
+  var ant={liquido:0,aportado:0};
+  var linhas=r.serie.map(function(x){
+    var j=(x.liquido-ant.liquido)-(x.aportado-ant.aportado);
+    ant=x;
+    return '<tr><td>'+x.mes+'</td><td>'+money(j)+'</td><td>'+money(x.liquido)+'</td></tr>';
+  }).join("");
+  return '<div class="sim-juros"><p class="sim-juros-tit">Juros de cada mês</p>'+
+    '<p class="hint">É quanto o investimento te paga em cada mês'+(r.ir>0.005?', já tirando o imposto de renda':'')+
+    '. Esse dinheiro você pode sacar e gastar ou deixar lá rendendo. A tabela conta que você deixou.</p>'+
+    '<div class="sim-juros-tab"><table><thead><tr><th>mês</th><th>juros do mês</th><th>total guardado</th></tr></thead>'+
+    '<tbody>'+linhas+'</tbody></table></div></div>';
 }
 
 // ————— gráfico (SVG à mão: linhas de 2px, área de 10%, grade fininha, rótulo só na ponta) —————
