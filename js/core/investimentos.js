@@ -260,3 +260,46 @@ export function simular(o,taxas){
           taxaRealAnual:ipca!=null?((1+anual/100)/(1+ipca/100)-1)*100:null,
           poupanca:poup,ganhoSobrePoupanca:poup!=null?fim.bruto-fim.ir-poup:null,serie:serie};
 }
+
+// ————— calculadoras (juros compostos, juros simples, meta) —————
+// taxa em % e período "mes" ou "ano"; prazo sempre em meses. Aporte no fim de cada mês, sem imposto.
+
+// taxa ao mês (fração) equivalente: 12% ao ano composto vira uns 0,95% ao mês
+export function taxaMensalDe(taxa,per){
+  var t=(+taxa||0)/100;
+  return per==="ano"?Math.pow(1+t,1/12)-1:t;
+}
+
+function prazoOk(meses){return Math.max(1,Math.min(1200,Math.round(+meses||1)))}
+
+// juros sobre juros: o rendimento de cada mês passa a render também
+export function jurosCompostos(o){
+  var n=prazoOk(o.meses),m=taxaMensalDe(o.taxa,o.per),ini=Math.max(0,+o.inicial||0),ap=Math.max(0,+o.aporte||0);
+  var saldo=ini,aportado=ini,serie=[];
+  for(var i=1;i<=n;i++){
+    saldo=saldo*(1+m)+ap;aportado+=ap;
+    serie.push({mes:i,aportado:aportado,liquido:saldo,poupanca:null});
+  }
+  return {meses:n,taxaMensal:m*100,taxaAnual:(Math.pow(1+m,12)-1)*100,aportado:aportado,total:saldo,juros:saldo-aportado,serie:serie};
+}
+
+// juros simples: os juros são sempre sobre o valor inicial (12% ao ano vira 1% ao mês, sem composição).
+// A série traz os compostos na mesma taxa pra comparar.
+export function jurosSimples(o){
+  var n=prazoOk(o.meses),c=Math.max(0,+o.inicial||0),t=(+o.taxa||0)/100;
+  var ms=o.per==="ano"?t/12:t,mc=taxaMensalDe(o.taxa,o.per),serie=[];
+  for(var i=1;i<=n;i++)serie.push({mes:i,aportado:c,liquido:c*(1+ms*i),poupanca:c*Math.pow(1+mc,i)});
+  var fim=serie[n-1];
+  return {meses:n,taxaMensal:ms*100,capital:c,juros:fim.liquido-c,total:fim.liquido,
+          totalCompostos:fim.poupanca,jurosCompostos:fim.poupanca-c,serie:serie};
+}
+
+// quanto guardar por mês pra chegar na meta, já contando o que você tem hoje rendendo junto
+export function aporteParaMeta(o){
+  var n=prazoOk(o.meses),m=taxaMensalDe(o.taxa,o.per),ini=Math.max(0,+o.inicial||0),meta=Math.max(0,+o.meta||0);
+  var cresce=Math.pow(1+m,n),doInicial=ini*cresce,falta=meta-doInicial;
+  var aporte=falta<=0?0:(m>0?falta*m/(cresce-1):falta/n);
+  var r=jurosCompostos({inicial:ini,aporte:aporte,taxa:o.taxa,per:o.per,meses:n});
+  r.aporte=aporte;r.meta=meta;r.jaChega=falta<=0;r.doInicial=doInicial;
+  return r;
+}
