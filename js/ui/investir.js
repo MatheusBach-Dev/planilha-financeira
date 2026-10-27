@@ -71,51 +71,12 @@ export function renderInvestir(){
   var foco=document.activeElement&&v.contains(document.activeElement)?document.activeElement.id:null;
   if(sim.aporte==null)sim.aporte=inv.aporteSugerido()||0;
   if(sim.inicial==null)sim.inicial=inv.totaisInvestidos().total||0;
-  v.innerHTML='<div class="blocos">'+secSimulador()+secNivel()+secCarteira()+
+  v.innerHTML='<div class="blocos">'+secSimulador()+secCarteira()+
     '<p class="inv-aviso">Conteúdo educativo: o app explica e simula, mas não recomenda nenhum investimento específico. '+
     'Antes de investir, leia as regras e os custos do produto.</p></div>';
   aplicarMascara(v);
   desenharSimulador();
   if(foco&&$(foco))$(foco).focus();
-}
-
-function secNivel(){
-  var n=inv.nivelInvestidor();
-  if(!n)return '<section class="bloco"><h2>seu nível</h2>'+
-    '<p class="hint">Cadastre seu salário no perfil pra ver quanto faz sentido guardar pra sua renda.</p></section>';
-  var idx=Math.max(0,n.niveis.map(function(x){return x.id}).indexOf(n.nivel)),atual=n.niveis[idx];
-  // segmentos de largura igual (é uma escala de ordem); o marcador anda dentro do segmento pelo % guardado
-  var ult=n.niveis[n.niveis.length-1],teto=Math.max(ult.de+10,ult.de*1.5);
-  var p=Math.round(n.pct*10)/10,ini=atual.de,fim=atual.ate==null?teto:atual.ate;
-  var dentro=fim>ini?Math.max(0,Math.min(0.94,(p-ini)/(fim-ini))):0.5;
-  var pos=(idx+dentro)/n.niveis.length*100;
-  var regua='<div class="regua" role="img" aria-label="Seu nível: '+esc(atual.nome)+', guardando '+pctTxt(p)+'% da renda">'+
-    '<div class="regua-faixas">'+n.niveis.map(function(x,i){
-      return '<div class="rf n'+(i+1)+(i===idx?' atual':'')+'"><span>'+esc(x.nome)+'</span></div>';
-    }).join("")+'</div>'+
-    '<div class="regua-marca" style="left:'+Math.max(7,Math.min(93,pos)).toFixed(1)+'%"><em>você · '+pctTxt(p)+'%</em><i></i></div>'+
-    '<div class="regua-cortes">'+n.niveis.map(function(x,i){
-      return '<span style="left:'+(i/n.niveis.length*100)+'%">'+pctTxt(x.de)+'%</span>';
-    }).join("")+'</div></div>';
-  var faixaAtual=0;
-  for(var i=0;i<n.faixas.length;i++){if(n.faixas[i].ate==null||n.renda<=n.faixas[i].ate){faixaAtual=i;break}}
-  var maxPct=Math.max.apply(null,n.faixas.map(function(f){return f.pct}));
-  var escada='<div class="escada" role="table" aria-label="Quanto faz sentido guardar por faixa de renda">'+
-    '<p class="escada-tit">Quanto faz sentido guardar, pela renda</p>'+
-    n.faixas.map(function(f,i){
-      var de=i?n.faixas[i-1].ate:0;
-      var rot=f.ate==null?"mais de "+curto(de):(i?curto(de).replace(" mil","")+" a "+curto(f.ate).replace("R$ ",""):"até "+curto(f.ate));
-      return '<div class="degrau'+(i===faixaAtual?' atual':'')+'" role="row"><span role="cell">'+rot+'</span>'+
-        '<div class="degrau-barra"><i style="width:'+(f.pct/maxPct*100).toFixed(1)+'%"></i></div>'+
-        '<b role="cell">'+f.pct+'%</b>'+(i===faixaAtual?'<em>sua faixa</em>':'')+'</div>';
-    }).join("")+'</div>';
-  return '<section class="bloco"><h2>seu nível</h2>'+
-    '<div class="nivel-topo"><b class="nivel-nome n'+(idx+1)+'">'+esc(atual.nome)+'</b>'+
-    '<span>Você guarda <b>'+money(n.guarda)+'</b> por mês, '+pctTxt(p)+'% da sua renda, '+
-    (n.fonte==="ciclo"?"pelo que você investe neste ciclo.":"pela sua meta de investir.")+'</span></div>'+
-    regua+'<p class="nivel-texto">'+esc(atual.texto)+'</p>'+escada+
-    '<p class="nivel-sug">Pra '+esc(n.sugerido.faixa)+', guardar <b>'+pctTxt(n.sugerido.pct)+'%</b> ('+money(n.sugerido.valor)+
-    ' por mês) já é um bom ritmo. Quanto mais a renda passa do custo de vida, maior a parte que dá pra guardar.</p></section>';
 }
 
 function op(v,l,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?' selected':'')+'>'+l+'</option>'}
