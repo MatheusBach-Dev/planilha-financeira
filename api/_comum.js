@@ -85,4 +85,4 @@ function lerCorpo(req) {
   return null;
 }
 
-module.exports = {exigirLogin, lerCorpo};
+module.exports = {exigirLogin, lerCorpo, conferirLogin};

@@ -4,6 +4,7 @@ import { padraoConfig, state, ui } from "../core/estado.js";
 import { $, DOW, MESES, esc, money, num } from "../core/formato.js";
 import { diaPagamento, mesExtenso, temPagamento, textoRegraPag } from "../core/pagamento.js";
 import { sessao } from "../dados/sessao.js";
+import { secaoBancosTeste } from "./bancos.js";
 import { rotuloTipo } from "./folhas.js";
 import { carregarInvestir, modInvest } from "./investir.js";
 import { secaoParcelamentos } from "./parcelas.js";
@@ -79,7 +80,7 @@ export function renderSet() {
         (fim ? '' : '<button class="rm" data-delfixo="' + esc(f.id) + '">' + (historicoAte(f) ? 'parar' : 'remover') + '</button>') + '</div>';
     }).join("") : '<p class="empty">Nenhuma conta fixa ainda.</p>') +
     '<button class="btn ghost w" id="addFixo" style="margin-top:14px">Adicionar conta fixa</button>' +
-    '</section>' + secaoParcelamentos() + '</div>' +
+    '</section>' + secaoParcelamentos() + secaoBancosTeste() + '</div>' +
     '<p class="hint" style="margin-top:30px;text-align:center">projeção, não adivinhação</p>';
   aplicarMascara(v);
   atualizaSaveBar();
