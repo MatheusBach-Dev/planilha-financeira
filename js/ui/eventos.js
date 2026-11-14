@@ -3,6 +3,7 @@ import {entrarGoogle, sairDaConta} from "../dados/firebase.js";
 import {salvarConfig} from "../dados/persistencia.js";
 import {sessao} from "../dados/sessao.js";
 import {apagarFixo, apagarParc, aplicarAperto, desfazerAperto, desfazerPagoConta, limpar, limparDias, marcarAte, marcarDia, mover, naoPagarConta, remover, removerFixo, salvarConfigManual, salvarFixo, salvarNovo, salvarPagamento, salvarPagoConta, salvarParc, setTab, voltarACobrarConta} from "./acoes.js";
+import {cliqueBancos} from "./bancos.js";
 import {abrirParcelamento, atualizaParcelamento} from "./parcelas.js";
 import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagamento, abrirPagarConta, atualizaAvisoFixo, atualizaRegraFixo, atualizaRegraPag, atualizaSeg, fe, fecharSheet, scrim} from "./folhas.js";
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
@@ -31,6 +32,7 @@ export function ligarEventos(){
     var t=e.target.closest("[data-tab]");
     if(t)return setTab(t.dataset.tab);
     if(cliqueInvestir(e))return;
+    if(cliqueBancos(e))return;
     if(e.target.closest("#fabAdd,#topAdd"))return abrirNovo();
     var cm=e.target.closest("[data-checkinmes]");
     if(cm)return abrirCheckin(cm.dataset.checkinmes);
