@@ -1,6 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    {"name": "bancos-teste", "runtimeExecutable": "python", "runtimeArgs": ["C:/Users/MATHEU~1/AppData/Local/Temp/claude/23700def82df9067/7d3e2192-eea0-4a83-84b3-052d86e65e47/scratchpad/semcache.py", "C:/Users/MATHEU~1/AppData/Local/Temp/claude/23700def82df9067/7d3e2192-eea0-4a83-84b3-052d86e65e47/scratchpad/wt-bancos"], "port": 5175}
-  ]
-}
