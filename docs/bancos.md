@@ -41,6 +41,35 @@ Só lê e mostra. Nada é lançado nem gravado no Firestore.
 - Depois de "Registrar aviso automático", o aviso chega quando o Meu Pluggy atualiza? (painel da Pluggy, em Webhooks, e log da Vercel)
 - Continua funcionando depois dos 15 dias de trial da conta de desenvolvedor?
 
+## Fase (b): revisar o que veio do banco
+
+- `api/pluggy-movimentos.js` lê as movimentações das conexões do dono (só leitura, só a conta `DONO_UID`).
+  Cartão de crédito fica de fora por enquanto.
+- O app grava a lista num documento só da pessoa, `users/{uid}/config/bancos`, com o login dela.
+  Nenhuma função do servidor grava no Firestore, então não precisa de conta de serviço.
+- O id da transação no banco é a chave de cada item: buscar de novo nunca duplica nem reabre o que já foi revisado.
+- Movimentação ainda pendente no banco espera virar confirmada antes de aparecer.
+- Pix entre as suas próprias contas é ignorado sozinho (dá pra trazer de volta em "ignoradas").
+- Se já existe lançamento com o mesmo valor no mesmo dia (ou um dia antes ou depois), aparece "é o mesmo",
+  pra não contar duas vezes. Entrada com o valor do salário aparece como "é o salário", porque o salário
+  já entra pela regra de recebimento.
+- Ao lançar, o app guarda o tipo, o nome e a categoria escolhidos pra aquela loja ou pessoa e sugere igual da próxima vez.
+- Ligar: perfil, com `?bancos` no endereço, seção "bancos", escolher a data de início e "Ligar revisão automática".
+  Depois disso a seção aparece sempre no perfil, e o cartão "do banco" aparece no topo da aba saldos quando tem algo pra revisar.
+- O app busca no banco quando é aberto, no máximo a cada 30 minutos. O Meu Pluggy atualiza uma vez por dia.
+
+### Regra do Firestore
+
+Se o perfil disser que o Firestore não deixou ler ou gravar `config/bancos`, a regra atual só libera
+documentos específicos. No console do Firebase, em Firestore > Regras, garanta que existe este bloco
+(acrescente, sem apagar o resto):
+
+```
+match /users/{uid}/{document=**} {
+  allow read, write: if request.auth != null && request.auth.uid == uid;
+}
+```
+
 ## Segurança
 
 - Client Secret, segredo do webhook e qualquer chave ficam só nas variáveis de ambiente da Vercel, nunca no git.

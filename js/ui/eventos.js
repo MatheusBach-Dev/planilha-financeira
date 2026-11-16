@@ -9,6 +9,7 @@ import {abrirCheckin, abrirCores, abrirDia, abrirNovo, abrirNovoFixo, abrirPagam
 import {abrirIA, cancelarIA, confirmarIA, desfazerIA, enviarAudioIA, enviarIA, limparIA} from "./ia.js";
 import {atualizaSaveBar, lerMoney} from "./perfil.js";
 import {cliqueInvestir, mudancaInvestir} from "./investir.js";
+import {cliqueRevisar, mudancaRevisar} from "./revisar.js";
 import {escolherMeses, render, trocarLateral} from "./render.js";
 import {aplicarTema} from "./tema.js";
 import {toast} from "./toast.js";
@@ -32,6 +33,7 @@ export function ligarEventos(){
     var t=e.target.closest("[data-tab]");
     if(t)return setTab(t.dataset.tab);
     if(cliqueInvestir(e))return;
+    if(cliqueRevisar(e))return;
     if(cliqueBancos(e))return;
     if(e.target.closest("#fabAdd,#topAdd"))return abrirNovo();
     var cm=e.target.closest("[data-checkinmes]");
@@ -144,6 +146,7 @@ export function ligarEventos(){
   });
   document.addEventListener("input",function(e){
     if(mudancaInvestir(e))return;
+    if(mudancaRevisar(e))return;
     if(e.target.closest&&e.target.closest("#viewSet [data-set]")){
       ui.cfgSujo=true;atualizaSaveBar();
     }
@@ -151,6 +154,7 @@ export function ligarEventos(){
   });
   document.addEventListener("change",function(e){
     if(mudancaInvestir(e))return;
+    if(mudancaRevisar(e))return;
     var s=e.target.closest("[data-set]");
     if(s){
       var k=s.dataset.set;
