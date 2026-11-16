@@ -1,6 +1,7 @@
 import {FB_VER, FIREBASE_CONFIG} from "../config.js";
 import {localLoad, localSave, normalizarConfig, state, temDados} from "../core/estado.js";
 import {$} from "../core/formato.js";
+import {assinarBancos} from "./bancos.js";
 import {conectar} from "./claude.js";
 import {salvarConfig, salvarMes} from "./persistencia.js";
 import {sessao} from "./sessao.js";
@@ -117,4 +118,5 @@ export function assinarFirestore(){
     }
     state.meses=remoto;localSave();render();
   },erro));
+  sessao.unsub.push(assinarBancos(render));
 }

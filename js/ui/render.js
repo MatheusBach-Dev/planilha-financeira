@@ -11,6 +11,7 @@ import {montarLateral} from "./ia.js";
 import {renderInvestir} from "./investir.js";
 import {renderPaineis} from "./ledger.js";
 import {renderMes} from "./mes.js";
+import {renderRevisar} from "./revisar.js";
 import {avatarHTML, nomeExibido, renderSet} from "./perfil.js";
 
 export var mqLargo=window.matchMedia("(min-width:1100px)");
@@ -102,6 +103,7 @@ export function render(){
     fr.innerHTML='<div class="note">Primeira vez aqui? Vá em <b>configurações</b>, diga quanto você recebe e em que dia útil cai. Depois use o <b>+</b> pra lançar contas e o que você gastar em cada dia. O app só conta o que você anotar.</div>';
   }else fr.innerHTML="";
 
+  renderRevisar();
   renderPaineis();
   if(ui.tab==="mes")renderMes(r,ciclo,plano);
   if(ui.tab==="set")renderSet();

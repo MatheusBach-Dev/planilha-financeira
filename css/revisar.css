@@ -1,0 +1,46 @@
+/* ————— movimentações do banco pra revisar (topo da aba saldos) ————— */
+.revisar{margin:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:14px 14px 10px}
+.rv-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.rv-topo h2{font-family:var(--display);font-size:16px;font-weight:600;margin:0}
+.rv-topo p{margin:2px 0 0;font-size:12px;color:var(--text-dim)}
+.rv-topo .ed:disabled{opacity:.6}
+.revisar .rv-nota{margin:8px 0}
+.rv-item{padding:12px 0;border-top:1px solid var(--line-soft)}
+.rv-item:first-of-type{border-top:0}
+.rv-linha{display:flex;align-items:center;gap:10px}
+.rv-desc{
+  flex:1;min-width:0;border:1px solid transparent;border-radius:8px;background:none;color:var(--text);
+  font-size:15px;font-weight:500;padding:5px 7px;margin-left:-7px;
+}
+.rv-desc:hover{border-color:var(--line)}
+.rv-desc:focus{border-color:var(--sea);outline:none;background:var(--bg)}
+.rv-valor{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.rv-valor.saida{color:var(--neg-deep)}
+.rv-valor.entrada{color:var(--pos-deep)}
+.rv-info{display:block;color:var(--text-dim);font-size:11.5px;margin:2px 0 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-aprendi{color:var(--sea)}
+.rv-escolha{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.revisar .rv-tipos{flex:1 1 240px;margin:0}
+.revisar .rv-tipos button{padding:7px 4px}
+.rv-cat{
+  flex:1 1 150px;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--text);
+  border-radius:99px;padding:7px 10px;font-size:12.5px;-webkit-appearance:none;appearance:none;
+}
+.rv-aviso{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:var(--text)}
+.rv-item.duvida .rv-aviso{background:var(--sea-soft);border-radius:8px;padding:8px 10px}
+.rv-acoes{display:flex;gap:8px;margin-top:10px}
+.rv-acoes .btn{flex:1;padding:9px 12px;font-size:13.5px}
+.rv-pe{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.rv-pe .btn{width:100%;padding:9px 12px;font-size:13px}
+.rv-pe .linkish{margin-top:8px}
+.rv-ignoradas{margin-top:6px}
+.rv-ign .ed{margin-left:4px}
+@media (max-width:559px){
+  .revisar{margin:14px}
+  .revisar .rv-tipos{flex-basis:100%}
+  .revisar .rv-tipos button{flex:1;font-size:12.5px;padding:9px 4px}
+  .rv-cat{flex-basis:100%;padding:9px 12px}
+}
+@media (min-width:760px){
+  .revisar{margin:16px 24px;padding:16px 18px 12px}
+}
